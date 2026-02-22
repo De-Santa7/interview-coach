@@ -2,9 +2,11 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage(): React.ReactElement {
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,17 +46,30 @@ export default function SignupPage(): React.ReactElement {
     if (!client) { setError("Supabase is not configured."); setLoading(false); return; }
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-    const { error } = await client.auth.signUp({
+    const { error: signUpError } = await client.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { full_name: fullName },
       },
     });
-    if (error) {
-      setError(error.message);
-    } else {
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    // Bypass email confirmation — sign in immediately with the same credentials.
+    const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      // Account created but auto sign-in failed (e.g. confirmation still required on the Supabase side).
+      // Fall back to prompting the user to check email.
       setSuccess(true);
+    } else {
+      router.push("/");
+      router.refresh();
     }
     setLoading(false);
   }

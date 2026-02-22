@@ -1,9 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
+// Only these paths require an active session. Everything else is public.
+const PROTECTED_PATHS = ["/settings"];
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   // Skip auth enforcement when Supabase isn't configured yet
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -11,6 +14,12 @@ export async function proxy(request: NextRequest) {
   ) {
     return NextResponse.next({ request });
   }
+
+  // Fast-path: if the route isn't protected, just refresh the session cookie
+  // and let the request through without a forced redirect.
+  const isProtected = PROTECTED_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -35,18 +44,13 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh session — must await getUser() not getSession()
+  // Always call getUser() so the session cookie gets refreshed on every request.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  const isPublic = PUBLIC_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
-
-  if (!user && !isPublic) {
+  // Only redirect to login when the route explicitly requires auth.
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
