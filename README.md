@@ -15,8 +15,5 @@ AI-powered hiring verdict at the end.
 
 ## Tech Stack
 Next.js · TypeScript · Tailwind CSS · Supabase · Groq API
-```
 
-**Topics/tags to add to your repo** (click the gear icon next to "About" on your repo page):
-```
 nextjs typescript tailwindcss supabase groq ai interview llm
