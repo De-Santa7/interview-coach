@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import PageWrapper from "@/components/PageWrapper";
 import Header from "@/components/Header";
+import LogoIcon from "@/components/LogoIcon";
 import { PROFESSION_CATEGORIES, filterProfessions } from "@/lib/professions";
 
 /* ── Ease ─────────────────────────────────────────── */
@@ -391,20 +392,101 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded bg-accent inline-flex items-center justify-center text-white text-2xs font-bold">
-              IC
-            </span>
-            <span
-              className="text-sm font-medium text-charcoal"
-              style={{ fontFamily: "var(--font-fraunces)" }}
-            >
-              InterviewCoach
-            </span>
-          </span>
-          <p className="text-xs text-muted">Practice interviews that actually prepare you.</p>
+      <footer style={{ backgroundColor: "#1c1508" }}>
+        <div className="max-w-6xl mx-auto px-6 sm:px-10 pt-14 pb-10">
+          {/* Top row */}
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-10 mb-10">
+            {/* Brand */}
+            <div className="flex flex-col gap-3 max-w-xs">
+              <Link href="/" className="flex items-center gap-2.5 group w-fit">
+                <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shrink-0 group-hover:opacity-90 transition-opacity shadow-sm">
+                    <LogoIcon size={24} />
+                  </div>
+                <span
+                  className="text-lg font-semibold"
+                  style={{ fontFamily: "var(--font-fraunces)" }}
+                >
+                  <span style={{ color: "#ffffff" }}>Interview</span>
+                  <span style={{ color: "#c49a2a" }}>Coach</span>
+                </span>
+              </Link>
+              <p className="text-sm leading-relaxed" style={{ color: "#9c8e7a" }}>
+                AI-powered practice interviews with real-world challenges and detailed hiring reports.
+              </p>
+            </div>
+
+            {/* Nav columns */}
+            <div className="flex gap-12 sm:gap-16">
+              <div>
+                <p
+                  className="text-xs font-semibold tracking-widest uppercase mb-4"
+                  style={{ color: "#c49a2a", fontFamily: "var(--font-mono)" }}
+                >
+                  Product
+                </p>
+                <ul className="flex flex-col gap-2.5">
+                  {[
+                    { href: "/", label: "Home" },
+                    { href: "/setup", label: "New Session" },
+                    { href: "/history", label: "History" },
+                  ].map(({ href, label }) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="text-sm transition-colors duration-150"
+                        style={{ color: "#9c8e7a" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9c8e7a")}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <p
+                  className="text-xs font-semibold tracking-widest uppercase mb-4"
+                  style={{ color: "#c49a2a", fontFamily: "var(--font-mono)" }}
+                >
+                  Account
+                </p>
+                <ul className="flex flex-col gap-2.5">
+                  {[
+                    { href: "/login", label: "Sign In" },
+                    { href: "/signup", label: "Create Account" },
+                    { href: "/settings", label: "Settings" },
+                  ].map(({ href, label }) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="text-sm transition-colors duration-150"
+                        style={{ color: "#9c8e7a" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9c8e7a")}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: "1px", backgroundColor: "#2e2010" }} className="mb-6" />
+
+          {/* Bottom row */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-xs" style={{ color: "#6b5e48" }}>
+              © {new Date().getFullYear()} InterviewCoach. All rights reserved.
+            </p>
+            <p className="text-xs" style={{ color: "#6b5e48" }}>
+              Practice interviews that actually prepare you.
+            </p>
+          </div>
         </div>
       </footer>
     </PageWrapper>

@@ -6,7 +6,13 @@ export const metadata: Metadata = {
   title: "InterviewCoach — Practice interviews that actually prepare you",
   description:
     "AI-powered interview practice with real role-specific challenges and detailed hiring reports.",
-  icons: { icon: "/favicon.svg" },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo.png" },
+    ],
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

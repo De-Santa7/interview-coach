@@ -117,16 +117,11 @@ export default function SignupPage(): React.ReactElement {
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
       {/* Logo */}
-      <Link href="/login" className="flex items-center gap-2.5 mb-10 group">
-        <span className="w-8 h-8 rounded-md bg-accent flex items-center justify-center text-white text-xs font-bold shadow-sm">
-          IC
-        </span>
-        <span
-          className="text-lg font-semibold text-charcoal group-hover:text-accent transition-colors"
-          style={{ fontFamily: "var(--font-fraunces)" }}
-        >
-          InterviewCoach
-        </span>
+      <Link href="/" className="mb-8 block hover:opacity-90 transition-opacity">
+        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="InterviewCoach" className="h-[72px] w-auto" />
+        </div>
       </Link>
 
       <div className="w-full max-w-sm">

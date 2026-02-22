@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import LogoIcon from "@/components/LogoIcon";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -28,17 +29,18 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
     >
       <div className="max-w-5xl mx-auto px-5 sm:px-8 h-14 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <span className="w-7 h-7 rounded-md bg-accent flex items-center justify-center text-white text-xs font-bold shadow-sm group-hover:bg-accent-hover transition-colors">
-            IC
-          </span>
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0 group-hover:opacity-90 transition-opacity shadow-sm">
+              <LogoIcon size={22} />
+            </div>
           <span
-            className={`text-base font-semibold hidden sm:block group-hover:text-accent transition-colors ${
-              dark ? "text-white" : "text-charcoal"
+            className={`text-base font-semibold hidden sm:block transition-colors ${
+              dark ? "text-white group-hover:text-accent" : "text-charcoal group-hover:text-accent"
             }`}
             style={{ fontFamily: "var(--font-fraunces)" }}
           >
-            InterviewCoach
+            <span style={{ color: dark ? "#ffffff" : "#3d2008" }}>Interview</span>
+            <span style={{ color: "#c49a2a" }}>Coach</span>
           </span>
         </Link>
 
