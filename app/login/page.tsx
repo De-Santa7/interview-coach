@@ -23,7 +23,7 @@ function LoginContent(): React.ReactElement {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(authError === "auth" ? "Authentication failed. Please try again." : "");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "linkedin" | null>(null);
 
   const clientRef = useRef<ReturnType<typeof createClient> | null>(null);
   function getClient() {
@@ -50,12 +50,13 @@ function LoginContent(): React.ReactElement {
     }
   }
 
-  async function handleOAuth(provider: "google" | "apple") {
+  async function handleOAuth(provider: "google" | "linkedin") {
     setOauthLoading(provider);
     const client = getClient();
     if (!client) { setError("Supabase is not configured."); setOauthLoading(null); return; }
+    const supabaseProvider = provider === "linkedin" ? "linkedin_oidc" : provider;
     const { error } = await client.auth.signInWithOAuth({
-      provider,
+      provider: supabaseProvider as "google" | "linkedin_oidc",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -111,16 +112,19 @@ function LoginContent(): React.ReactElement {
             </button>
 
             <button
-              onClick={() => handleOAuth("apple")}
+              onClick={() => handleOAuth("linkedin")}
               disabled={!!oauthLoading || loading}
-              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-md bg-charcoal hover:bg-[#2d2d30] text-white text-sm font-medium transition-all duration-150 border border-charcoal disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-md text-white text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#0A66C2" }}
+              onMouseEnter={(e) => { if (!oauthLoading && !loading) e.currentTarget.style.backgroundColor = "#004182"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#0A66C2"; }}
             >
-              {oauthLoading === "apple" ? (
+              {oauthLoading === "linkedin" ? (
                 <LoadingDots light />
               ) : (
                 <>
-                  <AppleIcon />
-                  <span>Continue with Apple</span>
+                  <LinkedInIcon />
+                  <span>Continue with LinkedIn</span>
                 </>
               )}
             </button>
@@ -215,10 +219,10 @@ function GoogleIcon() {
   );
 }
 
-function AppleIcon() {
+function LinkedInIcon() {
   return (
-    <svg width="17" height="17" viewBox="0 0 814 1000" fill="currentColor">
-      <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.3-164-39.3c-76 0-103.7 40.8-165.9 40.8s-105-37.5-155.5-127.4C46.7 790.7 0 663 0 541.8c0-207.3 135.3-317 268.1-317 63.2 0 115.9 41.6 155.5 41.6 37.8 0 97.9-43.9 168.8-43.9 68.2 0 137.2 25 183.7 93.5zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
     </svg>
   );
 }
