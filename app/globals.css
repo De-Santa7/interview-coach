@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --font-fraunces: "Fraunces", serif;
-  --font-jakarta: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-fraunces: "Syne", sans-serif;
+  --font-jakarta: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 * {

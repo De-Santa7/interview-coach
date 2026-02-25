@@ -1,13 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Only these paths require an active session. Everything else is public.
-const PROTECTED_PATHS = ["/settings"];
+/** Paths anyone can visit without signing in */
+const PUBLIC_PATHS = ["/", "/login", "/signup"];
+
+function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.includes(pathname)) return true;
+  // All /auth/* routes (OAuth callbacks, etc.)
+  if (pathname.startsWith("/auth/")) return true;
+  return false;
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip auth enforcement when Supabase isn't configured yet
+  // Skip when Supabase isn't configured (e.g. no .env.local)
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -15,12 +22,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Fast-path: if the route isn't protected, just refresh the session cookie
-  // and let the request through without a forced redirect.
-  const isProtected = PROTECTED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
-
+  // Build a mutable response so Supabase can refresh session cookies
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -44,16 +46,17 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Always call getUser() so the session cookie gets refreshed on every request.
+  // Always call getUser() so the session cookie gets refreshed on every request
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Only redirect to login when the route explicitly requires auth.
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  // Redirect unauthenticated users away from protected pages
+  if (!user && !isPublicPath(pathname)) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return supabaseResponse;

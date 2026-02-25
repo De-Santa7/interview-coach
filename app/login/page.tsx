@@ -17,6 +17,7 @@ function LoginContent(): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   const authError = searchParams.get("error");
+  const redirectTo = searchParams.get("redirect") ?? "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +46,7 @@ function LoginContent(): React.ReactElement {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
     }
   }
@@ -55,10 +56,12 @@ function LoginContent(): React.ReactElement {
     const client = getClient();
     if (!client) { setError("Supabase is not configured."); setOauthLoading(null); return; }
     const supabaseProvider = provider === "linkedin" ? "linkedin_oidc" : provider;
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    if (redirectTo !== "/") callbackUrl.searchParams.set("next", redirectTo);
     const { error } = await client.auth.signInWithOAuth({
       provider: supabaseProvider as "google" | "linkedin_oidc",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl.toString(),
       },
     });
     if (error) {
