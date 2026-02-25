@@ -23,7 +23,7 @@ function fmt(s: number) {
 
 export default function ChallengePage() {
   const router = useRouter();
-  const { state, setChallengeSubmission } = useSession();
+  const { state, hydrated, setChallengeSubmission } = useSession();
   const { config, challenge, challengeSubmission } = state;
 
   const [text, setText] = useState(challengeSubmission || "");
@@ -32,8 +32,9 @@ export default function ChallengePage() {
   const [expired, setExpired] = useState(false);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!config || !challenge) router.replace("/setup");
-  }, [config, challenge, router]);
+  }, [hydrated, config, challenge, router]);
 
   useEffect(() => {
     if (!started) return;

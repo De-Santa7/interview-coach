@@ -29,7 +29,7 @@ export default function HistoryPage() {
   const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
-    setEntries(loadHistory());
+    loadHistory().then(setEntries);
   }, []);
 
   function handleDelete(id: string) {

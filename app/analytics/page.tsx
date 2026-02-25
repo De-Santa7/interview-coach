@@ -235,9 +235,10 @@ export default function AnalyticsPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const history = loadHistory();
-    setAnalytics(buildAnalytics(history));
-    setLoaded(true);
+    loadHistory().then((history) => {
+      setAnalytics(buildAnalytics(history));
+      setLoaded(true);
+    });
   }, []);
 
   if (!loaded) {

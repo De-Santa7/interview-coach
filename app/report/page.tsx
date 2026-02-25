@@ -20,7 +20,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 export default function ReportPage() {
   const router = useRouter();
-  const { state, setReport, reset } = useSession();
+  const { state, hydrated, setReport, reset } = useSession();
   const { config, questions, answers, challenge, challengeSubmission, report } = state;
 
   const [streaming, setStreaming] = useState(false);
@@ -31,8 +31,9 @@ export default function ReportPage() {
   const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!config || questions.length === 0) router.replace("/setup");
-  }, [config, questions, router]);
+  }, [hydrated, config, questions, router]);
 
   useEffect(() => {
     if (!config || questions.length === 0 || parsed || hasFetched.current) return;

@@ -5,6 +5,7 @@ import React, {
   useContext,
   useReducer,
   useEffect,
+  useState,
   ReactNode,
 } from "react";
 import {
@@ -66,6 +67,7 @@ function reducer(state: SessionState, action: Action): SessionState {
 
 interface SessionContextValue {
   state: SessionState;
+  hydrated: boolean;
   setConfig: (config: SessionConfig) => void;
   setQuestions: (questions: Question[]) => void;
   setAnswer: (answer: Answer) => void;
@@ -78,9 +80,10 @@ interface SessionContextValue {
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  // Always start with initialState so server and client render identically (no hydration mismatch).
-  // After mount, load any saved session from localStorage via a HYDRATE dispatch.
   const [state, dispatch] = useReducer(reducer, initialState);
+  // hydrated becomes true after localStorage has been read — guards on
+  // child pages must wait for this before deciding to redirect.
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
@@ -89,24 +92,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore corrupt storage
     }
-  }, []); // runs once after hydration
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
+    if (!hydrated) return; // don't overwrite storage with empty state before hydration
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // ignore
     }
-  }, [state]);
+  }, [state, hydrated]);
 
   const value: SessionContextValue = {
     state,
+    hydrated,
     setConfig: (config) => dispatch({ type: "SET_CONFIG", payload: config }),
-    setQuestions: (questions) =>
-      dispatch({ type: "SET_QUESTIONS", payload: questions }),
+    setQuestions: (questions) => dispatch({ type: "SET_QUESTIONS", payload: questions }),
     setAnswer: (answer) => dispatch({ type: "SET_ANSWER", payload: answer }),
-    setChallenge: (challenge) =>
-      dispatch({ type: "SET_CHALLENGE", payload: challenge }),
+    setChallenge: (challenge) => dispatch({ type: "SET_CHALLENGE", payload: challenge }),
     setChallengeSubmission: (submission) =>
       dispatch({ type: "SET_CHALLENGE_SUBMISSION", payload: submission }),
     setReport: (report) => dispatch({ type: "SET_REPORT", payload: report }),

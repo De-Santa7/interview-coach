@@ -69,7 +69,7 @@ export default function HistoryDetailPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setEntry(getHistoryEntry(id));
+    getHistoryEntry(id).then(setEntry);
   }, [id]);
 
   function copyReport() {
