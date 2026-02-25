@@ -26,9 +26,126 @@ declare global {
   interface Window {
     SpeechRecognition: new () => SpeechRecognitionInstance;
     webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+    gtag?: (...args: unknown[]) => void;
   }
 }
 
+/* ── Timer helpers ─────────────────────────────── */
+function getQuestionDuration(interviewType: string, questionCategory?: string): number {
+  if (interviewType === "Technical") return 3 * 60;
+  if (interviewType === "Behavioral") return 2 * 60;
+  // Mixed — use the question's own category
+  if (questionCategory === "Technical") return 3 * 60;
+  return 2 * 60;
+}
+
+/* ── Countdown Ring ────────────────────────────── */
+function CountdownRing({ timeLeft, total }: { timeLeft: number; total: number }) {
+  const radius = 28;
+  const circ = 2 * Math.PI * radius;
+  const pct = total > 0 ? timeLeft / total : 0;
+  const offset = circ * (1 - pct);
+
+  const isRed = timeLeft <= 10;
+  const isAmber = timeLeft <= 30 && !isRed;
+  const strokeColor = isRed ? "#e05252" : isAmber ? "#f97316" : "#c49a2a";
+  const pulseClass = isRed ? "timer-pulse-red" : isAmber ? "timer-pulse-amber" : "";
+
+  const mins = Math.floor(timeLeft / 60);
+  const secs = timeLeft % 60;
+  const label = `${mins}:${String(secs).padStart(2, "0")}`;
+
+  return (
+    <div className={`relative w-16 h-16 shrink-0 ${pulseClass}`}>
+      <svg width="64" height="64" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="32" cy="32" r={radius} fill="none" stroke="var(--ring-track)" strokeWidth="4" />
+        <circle
+          cx="32" cy="32" r={radius} fill="none"
+          stroke={strokeColor} strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s ease" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="font-mono text-[10px] font-semibold tabular-nums"
+          style={{ color: strokeColor }}
+        >
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Webcam feed ───────────────────────────────── */
+function WebcamFeed() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    navigator.mediaDevices
+      .getUserMedia({ video: { width: 320, height: 240 }, audio: false })
+      .then((stream) => {
+        if (!active) { stream.getTracks().forEach((t) => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => setReady(true);
+        }
+      })
+      .catch(() => { if (active) setDenied(true); });
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  if (denied) {
+    return (
+      <div className="fixed top-16 right-3 z-40 hidden sm:block">
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[10px] rounded-lg px-3 py-2 max-w-[180px] leading-snug">
+          📷 Camera access recommended to simulate a real interview environment
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed top-16 right-3 z-40 hidden sm:block">
+      <div className="relative w-40 h-[120px] rounded-xl overflow-hidden border-2 border-border shadow-card-md bg-black">
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`w-full h-full object-cover transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
+        />
+        {!ready && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <span className="text-[10px] text-white/40 font-mono">connecting…</span>
+          </div>
+        )}
+        {/* REC badge */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="font-mono text-[9px] text-white tracking-wider">REC</span>
+        </div>
+      </div>
+      <p className="text-center font-mono text-[9px] text-muted mt-1 tracking-wide">
+        You are being monitored
+      </p>
+    </div>
+  );
+}
+
+/* ── Page ──────────────────────────────────────── */
 export default function InterviewPage() {
   const router = useRouter();
   const { state, setAnswer } = useSession();
@@ -42,6 +159,11 @@ export default function InterviewPage() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
+  // Timer state
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
+  const startedAtRef = useRef<number>(Date.now());
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setVoiceSupported(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
@@ -52,11 +174,39 @@ export default function InterviewPage() {
     if (!config || questions.length === 0) router.replace("/setup");
   }, [config, questions, router]);
 
+  // Load saved answer on question change
   useEffect(() => {
     if (!questions[currentIndex]) return;
     const saved = answers.find((a) => a.questionId === questions[currentIndex].id);
     setAnswerText(saved?.text || "");
   }, [currentIndex, questions, answers]);
+
+  // Reset timer on question change
+  useEffect(() => {
+    if (!config || !questions[currentIndex]) return;
+    const duration = getQuestionDuration(config.interviewType, questions[currentIndex].category);
+    setTotalTime(duration);
+    setTimeLeft(duration);
+    startedAtRef.current = Date.now();
+  }, [currentIndex, questions, config]);
+
+  // Countdown
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const id = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(id);
+          // Auto-submit
+          setTimeout(() => saveAndNext(), 0);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]); // re-run when question changes
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
@@ -85,12 +235,17 @@ export default function InterviewPage() {
     recognitionRef.current = rec;
     rec.start();
     setIsListening(true);
-  }, [answerText]);
+    // Track voice usage
+    window.gtag?.("event", "voice_used", { question_index: currentIndex });
+  }, [answerText, currentIndex]);
 
   function saveAndNext() {
     stopListening();
+    const timeTaken = Math.round((Date.now() - startedAtRef.current) / 1000);
     if (questions[currentIndex]) {
-      setAnswer({ questionId: questions[currentIndex].id, text: answerText });
+      setAnswer({ questionId: questions[currentIndex].id, text: answerText, timeTaken });
+      // Track question answered
+      window.gtag?.("event", "question_answered", { question_index: currentIndex });
     }
     const isLast = currentIndex === questions.length - 1;
     if (isLast) {
@@ -103,8 +258,9 @@ export default function InterviewPage() {
 
   function saveAndPrev() {
     stopListening();
+    const timeTaken = Math.round((Date.now() - startedAtRef.current) / 1000);
     if (questions[currentIndex]) {
-      setAnswer({ questionId: questions[currentIndex].id, text: answerText });
+      setAnswer({ questionId: questions[currentIndex].id, text: answerText, timeTaken });
     }
     setDirection(-1);
     setCurrentIndex((i) => i - 1);
@@ -121,6 +277,9 @@ export default function InterviewPage() {
     <PageWrapper>
       <Header />
 
+      {/* Webcam — fixed top-right */}
+      <WebcamFeed />
+
       {/* ── Progress bar ───────────────────────── */}
       <div className="h-0.5 bg-border">
         <div
@@ -133,6 +292,7 @@ export default function InterviewPage() {
         <div className="mb-6">
           <BackButton href="/setup" label="Setup" />
         </div>
+
         {/* ── Header row ──────────────────────── */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
@@ -144,9 +304,12 @@ export default function InterviewPage() {
               {config.level}
             </span>
           </div>
-          <span className="font-mono text-2xs text-muted">
-            {currentIndex + 1} / {questions.length}
-          </span>
+          <div className="flex items-center gap-3">
+            <CountdownRing timeLeft={timeLeft} total={totalTime} />
+            <span className="font-mono text-2xs text-muted">
+              {currentIndex + 1} / {questions.length}
+            </span>
+          </div>
         </div>
 
         {/* ── Question card ──────────────────── */}

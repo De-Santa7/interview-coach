@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+declare global { interface Window { gtag?: (...args: unknown[]) => void; } }
 import { motion } from "framer-motion";
 import PageWrapper from "@/components/PageWrapper";
 import Header from "@/components/Header";
@@ -100,6 +102,7 @@ function SetupForm() {
       reset();
       const config: SessionConfig = { profession: profession.trim(), level, interviewType, questionCount, includeChallenge };
       setConfig(config);
+      window.gtag?.("event", "session_started", { profession: config.profession, level, interviewType, questionCount });
       const reqs: Promise<Response>[] = [
         fetch("/api/generate-questions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profession, level, interviewType, questionCount }) }),
       ];

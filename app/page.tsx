@@ -370,7 +370,7 @@ export default function Home() {
       {/* CTA */}
       <section className="max-w-6xl mx-auto px-6 sm:px-10 pb-16 sm:pb-28">
         <motion.div
-          className="card-md rounded-xl p-6 sm:p-10 lg:p-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-8 bg-gradient-to-br from-white to-accent-light/40"
+          className="card-md rounded-xl p-6 sm:p-10 lg:p-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-8 bg-gradient-to-br from-surface to-accent-light/40"
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

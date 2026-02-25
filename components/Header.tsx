@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import LogoIcon from "@/components/LogoIcon";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/history", label: "History" },
+  { href: "/analytics", label: "Analytics" },
   { href: "/setup", label: "New Session" },
 ];
 
@@ -31,8 +33,8 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0 group-hover:opacity-90 transition-opacity shadow-sm">
-              <LogoIcon size={22} />
-            </div>
+            <LogoIcon size={22} />
+          </div>
           <span
             className={`text-base font-semibold hidden sm:block transition-colors ${
               dark ? "text-white group-hover:text-accent" : "text-charcoal group-hover:text-accent"
@@ -52,7 +54,7 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
               <Link
                 key={href}
                 href={href}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 hidden sm:block ${
                   dark
                     ? active
                       ? "bg-white/15 text-white"
@@ -74,6 +76,7 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
             Start Interview
           </Link>
 
+          <ThemeToggle dark={dark} />
           <UserMenu dark={dark} />
         </nav>
       </div>
@@ -115,7 +118,6 @@ function UserMenu({ dark }: { dark: boolean }): React.ReactElement {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -132,7 +134,6 @@ function UserMenu({ dark }: { dark: boolean }): React.ReactElement {
     router.push("/login");
   }
 
-  // Still loading
   if (user === undefined) return <div className="w-8 h-8 rounded-full bg-border/60 animate-pulse ml-2" />;
 
   if (!user) {
@@ -184,6 +185,17 @@ function UserMenu({ dark }: { dark: boolean }): React.ReactElement {
             {name && <p className="text-sm font-medium text-charcoal truncate">{name}</p>}
             <p className="text-xs text-muted truncate">{email}</p>
           </div>
+          <Link
+            href="/analytics"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-body hover:text-charcoal hover:bg-bg transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            Analytics
+          </Link>
           <Link
             href="/settings"
             onClick={() => setOpen(false)}

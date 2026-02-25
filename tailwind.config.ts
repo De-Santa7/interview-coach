@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,23 +10,23 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#fafaf8",
-        surface: "#ffffff",
-        border: "#ebe8e0",
-        "border-strong": "#d4d0c8",
-        charcoal: "#18181a",
-        body: "#52524e",
-        muted: "#9c9a94",
+        bg: "var(--c-bg)",
+        surface: "var(--c-surface)",
+        border: "var(--c-border)",
+        "border-strong": "var(--c-border-strong)",
+        charcoal: "var(--c-charcoal)",
+        body: "var(--c-body)",
+        muted: "var(--c-muted)",
         accent: "#c49a2a",
         "accent-hover": "#a07e1e",
-        "accent-light": "#fef8ec",
-        "accent-mid": "#f5e5b0",
+        "accent-light": "var(--c-accent-light)",
+        "accent-mid": "var(--c-accent-mid)",
         success: "#3d9970",
-        "success-light": "#edf7f3",
+        "success-light": "var(--c-success-light)",
         danger: "#e05252",
-        "danger-light": "#fdf2f2",
+        "danger-light": "var(--c-danger-light)",
         info: "#4a7dd4",
-        "info-light": "#eef3fc",
+        "info-light": "var(--c-info-light)",
       },
       fontFamily: {
         sans: ["var(--font-jakarta)", "system-ui", "sans-serif"],
@@ -36,10 +37,10 @@ const config: Config = {
         "2xs": ["0.65rem", { lineHeight: "1rem" }],
       },
       boxShadow: {
-        card: "0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px #ebe8e0",
-        "card-md": "0 4px 16px rgba(0,0,0,0.07), 0 0 0 1px #ebe8e0",
-        "card-lg": "0 8px 32px rgba(0,0,0,0.09), 0 0 0 1px #ebe8e0",
-        "card-accent": "0 4px 16px rgba(196,154,42,0.15), 0 0 0 1px #c49a2a",
+        card: "var(--shadow-card)",
+        "card-md": "var(--shadow-card-md)",
+        "card-lg": "var(--shadow-card-lg)",
+        "card-accent": "var(--shadow-card-accent)",
         input: "0 0 0 3px rgba(196,154,42,0.15)",
       },
       borderRadius: {

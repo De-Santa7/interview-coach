@@ -36,6 +36,8 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
       "Product Designer",
       "Graphic Designer",
       "Motion Designer",
+      "UX Researcher",
+      "Creative Director",
     ],
   },
   {

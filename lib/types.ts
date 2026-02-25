@@ -25,6 +25,7 @@ export interface Question {
 export interface Answer {
   questionId: string;
   text: string;
+  timeTaken?: number; // seconds spent on this question
 }
 
 export interface Challenge {

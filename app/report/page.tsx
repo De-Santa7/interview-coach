@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+
+declare global { interface Window { gtag?: (...args: unknown[]) => void; } }
 import Link from "next/link";
 import PageWrapper from "@/components/PageWrapper";
 import Header from "@/components/Header";
@@ -9,6 +11,7 @@ import { useSession } from "@/lib/session-context";
 import { FullReport } from "@/lib/types";
 import { saveToHistory } from "@/lib/history";
 import ReportView from "@/components/ReportView";
+import { updateUserStats } from "@/lib/user-stats";
 
 /* ── Skeleton loader ───────────────────────────── */
 function Skeleton({ className = "" }: { className?: string }) {
@@ -76,6 +79,13 @@ export default function ReportPage() {
           answers,
           challenge: challenge ?? null,
           challengeSubmission,
+        });
+        // Update Supabase user stats + fire GA event
+        updateUserStats(p.overallScore, questions.length).catch(() => {});
+        window.gtag?.("event", "session_completed", {
+          profession: config!.profession,
+          score: p.overallScore,
+          verdict: p.verdict,
         });
       } catch {
         setError("Failed to generate report. Check your API key and try again.");

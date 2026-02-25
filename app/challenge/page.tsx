@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+
+declare global { interface Window { gtag?: (...args: unknown[]) => void; } }
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import PageWrapper from "@/components/PageWrapper";
@@ -42,8 +44,9 @@ export default function ChallengePage() {
 
   const handleSubmit = useCallback(() => {
     setChallengeSubmission(text);
+    window.gtag?.("event", "challenge_submitted", { challenge_type: challenge?.type, profession: config?.profession });
     router.push("/report");
-  }, [text, setChallengeSubmission, router]);
+  }, [text, setChallengeSubmission, router, challenge, config]);
 
   if (!config || !challenge) return null;
 
