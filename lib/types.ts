@@ -1,4 +1,4 @@
-export type ExperienceLevel = "Junior" | "Mid-Level" | "Senior" | "Lead";
+export type ExperienceLevel = "New Graduate" | "Junior" | "Mid-Level" | "Senior" | "Lead";
 export type InterviewType = "Technical" | "Behavioral" | "Mixed";
 export type QuestionCount = 3 | 5 | 10;
 export type ChallengeType = "code" | "writing";
@@ -81,4 +81,18 @@ export interface HistoryEntry {
   answers: Answer[];
   challenge: Challenge | null;
   challengeSubmission: string;
+}
+
+/* ── Integrity tracking (webcam face detection) ── */
+export interface IntegrityEvent {
+  timestamp: number;
+  type: "face_left" | "face_returned" | "gaze_away";
+}
+
+export interface IntegrityData {
+  events: IntegrityEvent[];
+  warningCount: number;
+  totalFaceAbsenceMs: number;
+  score: number; // 0-100
+  verdict: "High Integrity" | "Medium Integrity" | "Low Integrity";
 }

@@ -144,28 +144,66 @@ export default function ReportPage() {
 
   /* ── Loading state ─────────────────────────────── */
   if (streaming || (!parsed && !error)) {
+    const loadingSteps = [
+      { icon: "📋", label: "Reading your answers", done: rawText.length > 100 },
+      { icon: "🧠", label: "Evaluating performance", done: rawText.length > 300 },
+      { icon: "📊", label: "Generating verdict", done: rawText.length > 600 },
+    ];
     return (
       <PageWrapper>
         <Header />
         <main className="max-w-3xl mx-auto px-5 sm:px-8 py-20">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent-light border border-accent-mid mb-6">
-              <span className="text-2xl animate-spin-slow inline-block">✦</span>
+            <div
+              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 relative"
+              style={{
+                background: "linear-gradient(135deg, #e8b923, #00b4d8)",
+                boxShadow: "0 8px 32px rgba(232,185,35,0.3)",
+              }}
+            >
+              <span className="text-3xl animate-spin-slow inline-block">✦</span>
             </div>
             <h1
-              className="text-3xl font-light text-charcoal mb-3"
+              className="text-3xl sm:text-4xl font-light text-charcoal mb-3"
               style={{ fontFamily: "var(--font-fraunces)" }}
             >
               Evaluating your session...
             </h1>
-            <p className="text-body text-sm">
-              Claude is reviewing your answers and building a full hiring assessment.
+            <p className="text-body text-sm max-w-xs mx-auto">
+              AI is reviewing your answers and building a full hiring assessment.
             </p>
+          </div>
+
+          {/* Progress steps */}
+          <div className="flex items-center justify-center gap-4 mb-10">
+            {loadingSteps.map((step, i) => (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-500"
+                  style={{
+                    background: step.done
+                      ? "linear-gradient(135deg, #e8b923, #00b4d8)"
+                      : "linear-gradient(145deg, #f8f6f0, #ebe8e0)",
+                    border: `1px solid ${step.done ? "transparent" : "var(--c-border)"}`,
+                    boxShadow: step.done ? "0 4px 16px rgba(232,185,35,0.3)" : "none",
+                  }}
+                >
+                  {step.icon}
+                </div>
+                <p className="text-xs text-muted text-center max-w-[70px] leading-tight">{step.label}</p>
+              </div>
+            ))}
           </div>
 
           {/* Streaming preview */}
           {rawText ? (
-            <div className="card rounded-xl p-5 font-mono text-xs text-muted leading-relaxed max-h-44 overflow-hidden relative">
+            <div
+              className="rounded-xl p-5 font-mono text-xs text-muted leading-relaxed max-h-44 overflow-hidden relative"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+                border: "1px solid var(--c-border)",
+              }}
+            >
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none rounded-b-xl" />
               <pre className="whitespace-pre-wrap">{rawText}</pre>
             </div>
@@ -182,8 +220,11 @@ export default function ReportPage() {
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="w-2 h-2 rounded-full bg-accent inline-block"
-                style={{ animation: `bounce-dot 1.4s ease-in-out ${i * 0.2}s infinite` }}
+                className="w-2.5 h-2.5 rounded-full inline-block"
+                style={{
+                  background: "linear-gradient(135deg, #e8b923, #00b4d8)",
+                  animation: `bounce-dot 1.4s ease-in-out ${i * 0.2}s infinite`,
+                }}
               />
             ))}
           </div>

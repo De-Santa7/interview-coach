@@ -60,9 +60,7 @@ function LoginContent(): React.ReactElement {
     if (redirectTo !== "/") callbackUrl.searchParams.set("next", redirectTo);
     const { error } = await client.auth.signInWithOAuth({
       provider: supabaseProvider as "google" | "linkedin_oidc",
-      options: {
-        redirectTo: callbackUrl.toString(),
-      },
+      options: { redirectTo: callbackUrl.toString() },
     });
     if (error) {
       setError(error.message);
@@ -71,29 +69,52 @@ function LoginContent(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #fafaf8 0%, #f5f0e8 50%, #fafaf8 100%)" }}
+    >
+      {/* Background blobs */}
+      <div className="blob blob-gold w-80 h-80 absolute" style={{ top: "-10%", right: "-10%", opacity: 0.12 }} />
+      <div className="blob blob-teal w-64 h-64 absolute" style={{ bottom: "-10%", left: "-10%", opacity: 0.1 }} />
+
       {/* Logo */}
-      <Link href="/" className="mb-8 block hover:opacity-90 transition-opacity">
-        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+      <Link href="/" className="mb-8 block hover:opacity-90 transition-opacity relative z-10">
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-card-md mb-3"
+          style={{ background: "linear-gradient(135deg, #ffffff, #f8f6f0)", border: "1px solid var(--c-border)" }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="InterviewCoach" className="h-[72px] w-auto" />
+          <img src="/logo.png" alt="InterviewCoach" className="h-14 w-auto" />
         </div>
+        <p className="text-center text-base font-semibold" style={{ fontFamily: "var(--font-fraunces)" }}>
+          <span className="text-charcoal">Interview</span>
+          <span style={{ color: "#e8b923" }}>Coach</span>
+        </p>
       </Link>
 
-      <div className="w-full max-w-sm">
-        <div className="card-md p-8">
+      <div className="w-full max-w-sm relative z-10">
+        <div
+          className="p-8"
+          style={{
+            background: "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.5)",
+            borderRadius: "20px",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
+          }}
+        >
           <h1
             className="text-2xl font-semibold text-charcoal mb-1"
             style={{ fontFamily: "var(--font-fraunces)" }}
           >
-            Welcome back.
+            Welcome back. 👋
           </h1>
           <p className="text-sm text-body mb-7">Sign in to continue your practice.</p>
 
           {/* Error banner */}
           {error && (
-            <div className="mb-5 px-4 py-3 bg-danger-light border border-danger/20 rounded-md text-sm text-danger">
-              {error}
+            <div className="mb-5 px-4 py-3 bg-danger-light border border-danger/20 rounded-xl text-sm text-danger flex items-center gap-2">
+              <span>⚠️</span> {error}
             </div>
           )}
 
@@ -102,7 +123,7 @@ function LoginContent(): React.ReactElement {
             <button
               onClick={() => handleOAuth("google")}
               disabled={!!oauthLoading || loading}
-              className="btn-secondary flex items-center justify-center gap-3 w-full !py-2.5"
+              className="btn-secondary flex items-center justify-center gap-3 w-full !py-2.5 !rounded-xl"
             >
               {oauthLoading === "google" ? (
                 <LoadingDots />
@@ -117,8 +138,8 @@ function LoginContent(): React.ReactElement {
             <button
               onClick={() => handleOAuth("linkedin")}
               disabled={!!oauthLoading || loading}
-              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-md text-white text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "#0A66C2" }}
+              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-xl text-white text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#0A66C2", boxShadow: "0 2px 8px rgba(10,102,194,0.25)" }}
               onMouseEnter={(e) => { if (!oauthLoading && !loading) e.currentTarget.style.backgroundColor = "#004182"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#0A66C2"; }}
             >
@@ -179,16 +200,16 @@ function LoginContent(): React.ReactElement {
             <button
               type="submit"
               disabled={loading || !!oauthLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-1"
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-1 !rounded-xl"
             >
-              {loading ? <LoadingDots light /> : "Sign in"}
+              {loading ? <LoadingDots light /> : "Sign in →"}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-body mt-5">
           No account?{" "}
-          <Link href="/signup" className="text-accent hover:text-accent-hover font-medium transition-colors">
+          <Link href="/signup" className="font-medium transition-colors" style={{ color: "#e8b923" }}>
             Create one
           </Link>
         </p>
@@ -203,8 +224,8 @@ function LoadingDots({ light = false }: { light?: boolean }) {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className={`w-1.5 h-1.5 rounded-full animate-bounce-dot ${light ? "bg-white" : "bg-charcoal"}`}
-          style={{ animationDelay: `${i * 0.16}s` }}
+          className={`w-1.5 h-1.5 rounded-full ${light ? "bg-white" : "bg-charcoal"}`}
+          style={{ animation: `bounce-dot 1.4s ease-in-out ${i * 0.2}s infinite` }}
         />
       ))}
     </span>

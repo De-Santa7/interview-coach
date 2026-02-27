@@ -26,16 +26,25 @@ function SearchIcon() {
 }
 
 const LEVEL_ICONS: Record<ExperienceLevel, string> = {
+  "New Graduate": "🎓",
   Junior: "🌱",
   "Mid-Level": "⚡",
   Senior: "🔥",
   Lead: "🚀",
 };
 const LEVEL_DESC: Record<ExperienceLevel, string> = {
+  "New Graduate": "Recently graduated",
   Junior: "0–2 years",
   "Mid-Level": "3–5 years",
   Senior: "6–10 years",
   Lead: "10+ years",
+};
+const LEVEL_SUB: Record<ExperienceLevel, string> = {
+  "New Graduate": "Looking for first role",
+  Junior: "Early career",
+  "Mid-Level": "Growing professional",
+  Senior: "Experienced specialist",
+  Lead: "Leadership & strategy",
 };
 
 const TYPE_ICONS: Record<InterviewType, React.ReactElement> = {
@@ -119,7 +128,7 @@ function SetupForm() {
     } finally { setLoading(false); }
   }
 
-  const levels: ExperienceLevel[] = ["Junior", "Mid-Level", "Senior", "Lead"];
+  const levels: ExperienceLevel[] = ["New Graduate", "Junior", "Mid-Level", "Senior", "Lead"];
   const types: InterviewType[] = ["Technical", "Behavioral", "Mixed"];
   const counts: QuestionCount[] = [3, 5, 10];
 
@@ -156,7 +165,7 @@ function SetupForm() {
                 <button
                   key={s}
                   type="button"
-                  className="w-full text-left px-4 py-2.5 text-sm text-charcoal hover:bg-accent-light hover:text-accent transition-colors flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-sm text-charcoal hover:bg-accent-light hover:text-accent-hover transition-colors flex items-center gap-2"
                   onClick={() => { setProfession(s); setShowSuggestions(false); }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-muted/40 flex-shrink-0" />
@@ -171,27 +180,53 @@ function SetupForm() {
       {/* ── Experience level ─────────────────────── */}
       <motion.div className="card p-6" {...card(1)}>
         <label className="label block mb-4">Experience Level</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {levels.map((l) => {
             const active = level === l;
+            const isNewGrad = l === "New Graduate";
             return (
               <button
                 key={l}
                 type="button"
                 onClick={() => setLevel(l)}
-                className={`flex flex-col items-center gap-1.5 px-3 py-4 rounded-md border transition-all duration-150 ${
+                className={`relative flex flex-col items-center gap-1.5 px-3 py-4 rounded-xl border transition-all duration-200 ${
                   active
-                    ? "border-accent bg-accent-light shadow-card-accent"
-                    : "border-border bg-surface hover:border-border-strong hover:bg-bg"
+                    ? isNewGrad
+                      ? "border-teal bg-teal-light shadow-card-teal scale-[1.02]"
+                      : "border-accent bg-accent-light shadow-card-accent scale-[1.02]"
+                    : "border-border bg-surface hover:border-border-strong hover:bg-bg hover:scale-[1.01]"
                 }`}
+                style={active ? { background: isNewGrad ? "linear-gradient(145deg,#e0f7fc,#f0fdff)" : "linear-gradient(145deg,#fef8ec,#fffbf0)" } : {}}
               >
+                {isNewGrad && (
+                  <span className="absolute -top-2 -right-2 text-[9px] font-mono tracking-wider uppercase bg-teal text-white px-1.5 py-0.5 rounded-full font-semibold">
+                    New
+                  </span>
+                )}
                 <span className="text-2xl">{LEVEL_ICONS[l]}</span>
-                <span className={`text-sm font-semibold ${active ? "text-accent" : "text-charcoal"}`}>{l}</span>
-                <span className="text-xs text-muted">{LEVEL_DESC[l]}</span>
+                <span className={`text-xs font-bold text-center leading-tight ${active ? (isNewGrad ? "text-teal" : "text-accent-hover") : "text-charcoal"}`}>{l}</span>
+                <span className="text-[10px] text-muted text-center leading-tight">{LEVEL_DESC[l]}</span>
+                {active && <span className="text-[9px] text-center leading-tight opacity-60">{LEVEL_SUB[l]}</span>}
               </button>
             );
           })}
         </div>
+
+        {/* New Graduate info panel */}
+        {level === "New Graduate" && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 p-4 rounded-xl border border-teal/30 bg-teal-light/50"
+          >
+            <p className="text-xs font-semibold text-teal mb-2 flex items-center gap-1.5">
+              <span>🎓</span> New Graduate Mode Active
+            </p>
+            <p className="text-xs text-body leading-relaxed">
+              Questions focus on academic projects, problem-solving approach, theoretical knowledge, learning ability, and potential — not work experience. Challenges are scoped to foundational skills.
+            </p>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* ── Interview type ───────────────────────── */}
@@ -205,17 +240,18 @@ function SetupForm() {
                 key={t}
                 type="button"
                 onClick={() => setInterviewType(t)}
-                className={`flex flex-col items-start gap-2 px-4 py-4 rounded-md border transition-all duration-150 text-left ${
+                className={`flex flex-col items-start gap-2 px-4 py-4 rounded-xl border transition-all duration-200 text-left ${
                   active
-                    ? "border-accent bg-accent-light shadow-card-accent"
-                    : "border-border bg-surface hover:border-border-strong hover:bg-bg"
+                    ? "border-accent bg-accent-light shadow-card-accent scale-[1.01]"
+                    : "border-border bg-surface hover:border-border-strong hover:bg-bg hover:scale-[1.01]"
                 }`}
+                style={active ? { background: "linear-gradient(145deg,#fef8ec,#fffbf0)" } : {}}
               >
-                <span className={active ? "text-accent" : "text-muted"}>
+                <span className={active ? "text-accent-hover" : "text-muted"}>
                   {TYPE_ICONS[t]}
                 </span>
                 <div>
-                  <p className={`text-sm font-semibold ${active ? "text-accent" : "text-charcoal"}`}>{t}</p>
+                  <p className={`text-sm font-semibold ${active ? "text-accent-hover" : "text-charcoal"}`}>{t}</p>
                   <p className="text-xs text-muted mt-0.5">{TYPE_DESC[t]}</p>
                 </div>
               </button>
@@ -235,11 +271,12 @@ function SetupForm() {
                 key={c}
                 type="button"
                 onClick={() => setQuestionCount(c)}
-                className={`flex-1 py-3.5 rounded-md border text-sm font-semibold transition-all duration-150 ${
+                className={`flex-1 py-4 rounded-xl border text-sm font-semibold transition-all duration-200 ${
                   active
-                    ? "border-accent bg-accent-light text-accent shadow-card-accent"
-                    : "border-border bg-surface text-charcoal hover:border-border-strong"
+                    ? "border-accent bg-accent-light text-accent-hover shadow-card-accent scale-[1.02]"
+                    : "border-border bg-surface text-charcoal hover:border-border-strong hover:scale-[1.01]"
                 }`}
+                style={active ? { background: "linear-gradient(145deg,#fef8ec,#fffbf0)" } : {}}
               >
                 {c}
                 <span className="block font-normal text-xs text-muted mt-0.5">
@@ -253,10 +290,11 @@ function SetupForm() {
 
       {/* ── Challenge toggle ─────────────────────── */}
       <motion.div {...card(4)}
-        className={`card p-5 flex items-start gap-4 cursor-pointer transition-all duration-150 ${
+        className={`card p-5 flex items-start gap-4 cursor-pointer transition-all duration-200 ${
           includeChallenge ? "border-accent bg-accent-light/50" : ""
         }`}
         onClick={() => setIncludeChallenge(!includeChallenge)}
+        style={includeChallenge ? { background: "linear-gradient(145deg,rgba(254,248,236,0.7),rgba(255,251,240,0.7))" } : {}}
       >
         {/* Toggle */}
         <div className="mt-0.5 shrink-0">
@@ -275,7 +313,7 @@ function SetupForm() {
           <p className="text-sm font-semibold text-charcoal mb-1">
             Include practical challenge
             {includeChallenge && (
-              <span className="ml-2 font-mono text-2xs text-accent bg-accent-light border border-accent-mid px-2 py-0.5 rounded-full">
+              <span className="ml-2 font-mono text-2xs text-accent-hover bg-accent-light border border-accent-mid px-2 py-0.5 rounded-full">
                 Recommended
               </span>
             )}

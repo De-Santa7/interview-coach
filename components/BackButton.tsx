@@ -18,21 +18,28 @@ export default function BackButton({ href, label = "Back" }: BackButtonProps): R
   return (
     <button
       onClick={handleClick}
-      className="inline-flex items-center gap-1.5 text-sm text-body hover:text-charcoal transition-colors group"
+      className="inline-flex items-center gap-2 text-sm text-body hover:text-charcoal transition-all duration-150 group px-3 py-1.5 rounded-lg hover:bg-border/40"
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="group-hover:-translate-x-0.5 transition-transform duration-150"
+      <span
+        className="w-6 h-6 rounded-md flex items-center justify-center transition-all duration-150 group-hover:-translate-x-0.5"
+        style={{
+          background: "linear-gradient(145deg, #f8f6f0, #ebe8e0)",
+          border: "1px solid var(--c-border)",
+        }}
       >
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </span>
       {label}
     </button>
   );

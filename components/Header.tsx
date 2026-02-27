@@ -41,8 +41,8 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
             }`}
             style={{ fontFamily: "var(--font-fraunces)" }}
           >
-            <span style={{ color: dark ? "#ffffff" : "#3d2008" }}>Interview</span>
-            <span style={{ color: "#c49a2a" }}>Coach</span>
+            <span style={{ color: dark ? "#ffffff" : "#18181a" }}>Interview</span>
+            <span style={{ color: "#e8b923" }}>Coach</span>
           </span>
         </Link>
 
@@ -60,7 +60,7 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
                       ? "bg-white/15 text-white"
                       : "text-white/70 hover:text-white hover:bg-white/10"
                     : active
-                    ? "bg-accent-light text-accent"
+                    ? "bg-accent-light text-accent-hover font-semibold"
                     : "text-body hover:text-charcoal hover:bg-border/60"
                 }`}
               >

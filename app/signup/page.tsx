@@ -61,11 +61,8 @@ export default function SignupPage(): React.ReactElement {
       return;
     }
 
-    // Bypass email confirmation — sign in immediately with the same credentials.
     const { error: signInError } = await client.auth.signInWithPassword({ email, password });
     if (signInError) {
-      // Account created but auto sign-in failed (e.g. confirmation still required on the Supabase side).
-      // Fall back to prompting the user to check email.
       setSuccess(true);
     } else {
       router.push("/");
@@ -91,23 +88,41 @@ export default function SignupPage(): React.ReactElement {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm card-md p-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-success-light flex items-center justify-center mx-auto mb-4">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3d9970" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #fafaf8 0%, #f5f0e8 50%, #fafaf8 100%)" }}
+      >
+        <div className="blob blob-gold w-80 h-80 absolute" style={{ top: "-10%", right: "-10%", opacity: 0.12 }} />
+        <div className="blob blob-teal w-64 h-64 absolute" style={{ bottom: "-10%", left: "-10%", opacity: 0.1 }} />
+        <div
+          className="w-full max-w-sm p-8 text-center relative z-10"
+          style={{
+            background: "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.5)",
+            borderRadius: "20px",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+            style={{ background: "linear-gradient(135deg, #06d6a0, #00b4d8)", boxShadow: "0 6px 24px rgba(6,214,160,0.3)" }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h2
-            className="text-xl font-semibold text-charcoal mb-2"
-            style={{ fontFamily: "var(--font-fraunces)" }}
-          >
-            Check your email
+          <h2 className="text-xl font-semibold text-charcoal mb-2" style={{ fontFamily: "var(--font-fraunces)" }}>
+            Check your email ✉️
           </h2>
           <p className="text-sm text-body mb-6">
             We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account.
           </p>
-          <Link href="/login" className="btn-primary inline-flex">
+          <Link href="/login" className="btn-primary inline-flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
             Back to sign in
           </Link>
         </div>
@@ -116,28 +131,50 @@ export default function SignupPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #fafaf8 0%, #f5f0e8 50%, #fafaf8 100%)" }}
+    >
+      {/* Background blobs */}
+      <div className="blob blob-gold w-80 h-80 absolute" style={{ top: "-10%", right: "-10%", opacity: 0.12 }} />
+      <div className="blob blob-teal w-64 h-64 absolute" style={{ bottom: "-10%", left: "-10%", opacity: 0.1 }} />
+
       {/* Logo */}
-      <Link href="/" className="mb-8 block hover:opacity-90 transition-opacity">
-        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+      <Link href="/" className="mb-8 block hover:opacity-90 transition-opacity relative z-10">
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-card-md mb-3"
+          style={{ background: "linear-gradient(135deg, #ffffff, #f8f6f0)", border: "1px solid var(--c-border)" }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="InterviewCoach" className="h-[72px] w-auto" />
+          <img src="/logo.png" alt="InterviewCoach" className="h-14 w-auto" />
         </div>
+        <p className="text-center text-base font-semibold" style={{ fontFamily: "var(--font-fraunces)" }}>
+          <span className="text-charcoal">Interview</span>
+          <span style={{ color: "#e8b923" }}>Coach</span>
+        </p>
       </Link>
 
-      <div className="w-full max-w-sm">
-        <div className="card-md p-8">
-          <h1
-            className="text-2xl font-semibold text-charcoal mb-1"
-            style={{ fontFamily: "var(--font-fraunces)" }}
-          >
-            Create your account.
+      <div className="w-full max-w-sm relative z-10">
+        <div
+          className="p-8"
+          style={{
+            background: "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.5)",
+            borderRadius: "20px",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h1 className="text-2xl font-semibold text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
+            Create your account. 🚀
           </h1>
           <p className="text-sm text-body mb-7">Start practising interviews today — it&apos;s free.</p>
 
+          {/* Error banner */}
           {error && (
-            <div className="mb-5 px-4 py-3 bg-danger-light border border-danger/20 rounded-md text-sm text-danger">
-              {error}
+            <div className="mb-5 px-4 py-3 bg-danger-light border border-danger/20 rounded-xl text-sm text-danger flex items-center gap-2">
+              <span>⚠️</span> {error}
             </div>
           )}
 
@@ -146,15 +183,15 @@ export default function SignupPage(): React.ReactElement {
             <button
               onClick={() => handleOAuth("google")}
               disabled={!!oauthLoading || loading}
-              className="btn-secondary flex items-center justify-center gap-3 w-full !py-2.5"
+              className="btn-secondary flex items-center justify-center gap-3 w-full !py-2.5 !rounded-xl"
             >
               {oauthLoading === "google" ? <LoadingDots /> : <><GoogleIcon /><span>Continue with Google</span></>}
             </button>
             <button
               onClick={() => handleOAuth("linkedin")}
               disabled={!!oauthLoading || loading}
-              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-md text-white text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: "#0A66C2" }}
+              className="flex items-center justify-center gap-3 w-full py-2.5 px-4 rounded-xl text-white text-sm font-medium transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: "#0A66C2", boxShadow: "0 2px 8px rgba(10,102,194,0.25)" }}
               onMouseEnter={(e) => { if (!oauthLoading && !loading) e.currentTarget.style.backgroundColor = "#004182"; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#0A66C2"; }}
             >
@@ -171,7 +208,6 @@ export default function SignupPage(): React.ReactElement {
 
           {/* Form */}
           <form onSubmit={handleSignup} className="flex flex-col gap-4">
-            {/* Name row */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label block mb-1.5">First name</label>
@@ -262,16 +298,18 @@ export default function SignupPage(): React.ReactElement {
                 </button>
               </div>
               {confirmPassword && confirmPassword !== password && (
-                <p className="mt-1 text-xs text-danger">Passwords don&apos;t match</p>
+                <p className="mt-1 text-xs text-danger flex items-center gap-1">
+                  <span>⚠️</span> Passwords don&apos;t match
+                </p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={loading || !!oauthLoading}
-              className="btn-primary w-full flex items-center justify-center gap-2 mt-1"
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-1 !rounded-xl"
             >
-              {loading ? <LoadingDots light /> : "Create account"}
+              {loading ? <LoadingDots light /> : "Create account →"}
             </button>
           </form>
 
@@ -284,7 +322,7 @@ export default function SignupPage(): React.ReactElement {
 
         <p className="text-center text-sm text-body mt-5">
           Already have an account?{" "}
-          <Link href="/login" className="text-accent hover:text-accent-hover font-medium transition-colors">
+          <Link href="/login" className="font-medium transition-colors" style={{ color: "#e8b923" }}>
             Sign in
           </Link>
         </p>
@@ -299,8 +337,8 @@ function LoadingDots({ light = false }: { light?: boolean }) {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className={`w-1.5 h-1.5 rounded-full animate-bounce-dot ${light ? "bg-white" : "bg-charcoal"}`}
-          style={{ animationDelay: `${i * 0.16}s` }}
+          className={`w-1.5 h-1.5 rounded-full ${light ? "bg-white" : "bg-charcoal"}`}
+          style={{ animation: `bounce-dot 1.4s ease-in-out ${i * 0.2}s infinite` }}
         />
       ))}
     </span>

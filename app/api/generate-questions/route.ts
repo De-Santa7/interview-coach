@@ -7,6 +7,28 @@ export async function POST(req: NextRequest) {
   try {
     const { profession, level, interviewType, questionCount } = await req.json();
 
+    const isNewGrad = level === "New Graduate";
+
+    const newGradInstructions = isNewGrad ? `
+IMPORTANT — NEW GRADUATE TIER:
+This candidate recently graduated from university with little to no professional work experience.
+DO NOT ask about "years of experience" or past jobs.
+Instead focus on:
+- Academic projects, thesis work, capstone projects, hackathons
+- Theoretical knowledge and how it applies to real-world problems
+- Problem-solving approach and intellectual curiosity
+- Learning ability, adaptability, and growth mindset
+- Culture fit, teamwork in academic settings (group projects, labs, student organizations)
+- Career vision and motivation for this role
+- Internships or volunteer work (if relevant, but not required)
+Sample question styles for New Graduate:
+- "Tell me about your final year project and the technical decisions you made"
+- "You have no professional experience yet — what makes you the right candidate for this ${profession} role?"
+- "Describe a challenging problem you solved during your studies"
+- "How do you approach learning a new technology or skill you've never used before?"
+- "Where do you see yourself in 2 years and how does this role support that vision?"
+` : "";
+
     const prompt = `You are an expert hiring professional with deep knowledge of ${profession} roles. Generate ${questionCount} realistic interview questions for a ${level} ${profession} candidate.
 
 Interview type: ${interviewType}
@@ -26,14 +48,14 @@ Domain guidance by role type:
 - Management/Strategy roles: Stakeholder management, prioritization frameworks, OKRs, cross-functional leadership
 - Design roles: User research, design thinking, critique methodology, accessibility, design systems
 - Media/Creative roles: Editorial judgment, storytelling, audience understanding, platform expertise, production workflow
-
+${newGradInstructions}
 Requirements:
-- Every question must be SPECIFIC to the ${profession} role — not generic management/communication questions that could apply to anyone
-- Calibrate depth and complexity to ${level} experience
+- Every question must be SPECIFIC to the ${profession} role — not generic questions that could apply to anyone
+- Calibrate depth and complexity to ${level} experience${isNewGrad ? " — foundational, conceptual, and potential-focused" : ""}
 - Each question must require a substantive 2–3 minute answer with specific examples
 - No yes/no questions
-- For Behavioral questions: use STAR-style prompts ("Tell me about a time when...")
-- For Technical questions: ask about real tools, methodologies, and scenarios from the ${profession} field
+- For Behavioral questions: use STAR-style prompts ("Tell me about a time when..." or for New Graduate: "Tell me about a project where...")
+- For Technical questions: ask about real tools, methodologies, and scenarios from the ${profession} field${isNewGrad ? " at a foundational/academic level" : ""}
 
 Return ONLY valid JSON (no markdown, no explanation):
 [

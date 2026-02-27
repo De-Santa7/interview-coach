@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
       challengeSubmission,
     } = await req.json();
 
+    const isNewGrad = level === "New Graduate";
+
     const qaSection = questions
       .map((q: { id: string; text: string }, i: number) => {
         const answer = answers.find(
@@ -28,15 +30,28 @@ export async function POST(req: NextRequest) {
       ? `\n\nPRACTICAL CHALLENGE\nTitle: ${challenge.title}\nBrief: ${challenge.brief}\nSubmission:\n${challengeSubmission || "(No submission)"}`
       : "";
 
+    const newGradEvaluation = isNewGrad ? `
+IMPORTANT — NEW GRADUATE EVALUATION:
+This is a recent graduate with NO professional work experience. Evaluate accordingly:
+- Do NOT penalize for lack of work experience — that is expected
+- DO evaluate: intellectual potential, learning ability, academic knowledge depth, problem-solving approach, communication clarity, enthusiasm, and growth mindset
+- DO credit: academic projects, coursework examples, internships, personal projects, hackathons, and student activities
+- The verdict should reflect their POTENTIAL as a new hire, not their current professional track record
+- "Strong Hire" means they show exceptional potential, clear thinking, and strong foundational knowledge
+- "No Hire" means they couldn't demonstrate basic domain understanding or professionalism
+- Be encouraging but honest — highlight what they'd need to develop in their first year
+` : "";
+
     const prompt = `You are a senior hiring manager evaluating a ${level} ${profession} candidate. Provide a comprehensive, honest hiring assessment.
 
 CANDIDATE PROFILE
 Role: ${level} ${profession}
 Interview Type: ${interviewType}
+${isNewGrad ? "Note: This is an entry-level / new graduate position." : ""}
 
 INTERVIEW Q&A
 ${qaSection}${challengeSection}
-
+${newGradEvaluation}
 DOMAIN-SPECIFIC EVALUATION CRITERIA
 Apply the criteria most relevant to the ${profession} role:
 - Software/Tech roles: Code quality, system design thinking, debugging approach, scalability awareness, tooling knowledge
@@ -80,8 +95,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no explanation):
   }
   "strengths": ["<top strength 1>", "<top strength 2>", "<top strength 3>"],
   "improvements": ["<improvement area 1>", "<improvement area 2>", "<improvement area 3>"],
-  "recommendation": "<One crisp sentence hiring recommendation>"
-}`;
+  "recommendation": "<One crisp sentence hiring recommendation${isNewGrad ? " that considers their potential and learning trajectory" : ""}>"}`;
 
     const stream = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",

@@ -1,13 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import ScoreRing from "@/components/ScoreRing";
-import { FullReport, SessionConfig } from "@/lib/types";
+import { FullReport, SessionConfig, IntegrityData } from "@/lib/types";
+
+const INTEGRITY_KEY = "interview-coach-integrity";
 
 function ScorePill({ score }: { score: number }) {
   const [bg, text, border] =
     score >= 8
-      ? ["#edf7f3", "#1e6647", "#a7d9c3"]
+      ? ["#edf7f3", "#0e5c38", "#7dd4b0"]
       : score >= 6
       ? ["#fef8ec", "#7a5b12", "#e8c96a"]
       : score >= 4
@@ -23,6 +25,144 @@ function ScorePill({ score }: { score: number }) {
   );
 }
 
+/* ── Confetti ─────────────────────────────────────── */
+function Confetti() {
+  const colors = ["#e8b923", "#06d6a0", "#00b4d8", "#ef476f", "#ffd166", "#118ab2"];
+  const pieces = Array.from({ length: 60 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    delay: Math.random() * 3,
+    duration: 2.5 + Math.random() * 2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    size: 6 + Math.random() * 8,
+    rotate: Math.random() * 360,
+  }));
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+      {pieces.map((p) => (
+        <div
+          key={p.id}
+          className="confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            backgroundColor: p.color,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            transform: `rotate(${p.rotate}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ── Integrity Report Section ───────────────────── */
+function IntegritySection({ data }: { data: IntegrityData }) {
+  const faceAbsenceSecs = Math.round(data.totalFaceAbsenceMs / 1000);
+  const faceLeaveCount = data.events.filter((e) => e.type === "face_left" || e.type === "gaze_away").length;
+
+  const verdictColor =
+    data.verdict === "High Integrity"
+      ? { bg: "#edf7f3", text: "#0e5c38", border: "#7dd4b0", icon: "✅" }
+      : data.verdict === "Medium Integrity"
+      ? { bg: "#fffbeb", text: "#7a5b12", border: "#e8c96a", icon: "⚠️" }
+      : { bg: "#fdf2f2", text: "#8b2222", border: "#f4aaaa", icon: "❌" };
+
+  return (
+    <motion.div
+      className="card rounded-xl overflow-hidden mb-8"
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+    >
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border flex items-center gap-3"
+        style={{ background: "linear-gradient(145deg, #ffffff, #f8f6f0)" }}
+      >
+        <div className="w-8 h-8 rounded-full bg-teal-light border border-teal/20 flex items-center justify-center text-sm">
+          👁
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-charcoal">Integrity Report</p>
+          <p className="text-xs text-muted">Webcam monitoring analysis</p>
+        </div>
+        <span
+          className="ml-auto font-mono text-xs font-semibold px-3 py-1 rounded-full border"
+          style={{ background: verdictColor.bg, color: verdictColor.text, borderColor: verdictColor.border }}
+        >
+          {verdictColor.icon} {data.verdict}
+        </span>
+      </div>
+
+      <div className="p-6">
+        <div className="grid grid-cols-3 gap-4 mb-5">
+          {/* Integrity score */}
+          <div className="text-center p-4 rounded-xl border border-border bg-bg">
+            <div
+              className="text-3xl font-light mb-1"
+              style={{ fontFamily: "var(--font-fraunces)", color: data.score >= 85 ? "#06d6a0" : data.score >= 60 ? "#e8b923" : "#ef476f" }}
+            >
+              {data.score}%
+            </div>
+            <p className="text-xs text-muted font-mono tracking-wide uppercase">Integrity Score</p>
+          </div>
+
+          {/* Times left frame */}
+          <div className="text-center p-4 rounded-xl border border-border bg-bg">
+            <div className="text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
+              {faceLeaveCount}
+            </div>
+            <p className="text-xs text-muted font-mono tracking-wide uppercase">Times Looked Away</p>
+          </div>
+
+          {/* Time away */}
+          <div className="text-center p-4 rounded-xl border border-border bg-bg">
+            <div className="text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
+              {faceAbsenceSecs}s
+            </div>
+            <p className="text-xs text-muted font-mono tracking-wide uppercase">Total Time Away</p>
+          </div>
+        </div>
+
+        {/* Warnings */}
+        <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-bg">
+          <span className="text-sm">
+            {data.warningCount === 0 ? "✅" : data.warningCount <= 2 ? "⚠️" : "🚨"}
+          </span>
+          <p className="text-sm text-charcoal">
+            <span className="font-semibold">{data.warningCount} warning{data.warningCount !== 1 ? "s" : ""}</span> issued during the interview
+          </p>
+        </div>
+
+        {/* Score bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-xs text-muted font-mono mb-1.5">
+            <span>Integrity</span>
+            <span>{data.score}%</span>
+          </div>
+          <div className="h-2 bg-border rounded-full overflow-hidden">
+            <div
+              className="h-2 rounded-full transition-all duration-1000"
+              style={{
+                width: `${data.score}%`,
+                background: data.score >= 85
+                  ? "linear-gradient(90deg, #06d6a0, #00b4d8)"
+                  : data.score >= 60
+                  ? "linear-gradient(90deg, #ffd166, #e8b923)"
+                  : "linear-gradient(90deg, #ef476f, #c0392b)",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 interface ReportViewProps {
   config: SessionConfig;
   report: FullReport;
@@ -30,6 +170,15 @@ interface ReportViewProps {
 
 export default function ReportView({ config, report: r }: ReportViewProps) {
   const [activeTab, setActiveTab] = useState<"interview" | "challenge">("interview");
+  const [integrityData, setIntegrityData] = useState<IntegrityData | null>(null);
+  const showConfetti = r.verdict === "Strong Hire" || r.verdict === "Hire";
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(INTEGRITY_KEY);
+      if (raw) setIntegrityData(JSON.parse(raw) as IntegrityData);
+    } catch { /* ignore */ }
+  }, []);
 
   const revealUp = (delay = 0) => ({
     initial: { opacity: 0, y: 24 },
@@ -42,47 +191,56 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
   const isStrongHire = r.verdict === "Strong Hire";
   const isHire = r.verdict === "Hire";
   const isMaybe = r.verdict === "Maybe";
-  const bannerBg = isStrongHire
-    ? "bg-success-light border-success/25"
+
+  const verdictClass = isStrongHire
+    ? "verdict-strong-hire"
     : isHire
-    ? "bg-info-light border-info/25"
+    ? "verdict-hire"
     : isMaybe
-    ? "bg-accent-light border-accent/25"
-    : "bg-danger-light border-danger/25";
-  const verdictColor = isStrongHire
-    ? "text-success"
-    : isHire
-    ? "text-info"
-    : isMaybe
-    ? "text-accent"
-    : "text-danger";
+    ? "verdict-maybe"
+    : "verdict-no-hire";
+
+  const verdictTextColor = "text-white";
 
   return (
     <>
+      {/* Confetti for good verdicts */}
+      {showConfetti && <Confetti />}
+
       {/* ── Verdict hero ─────────────────────── */}
       <motion.div className="mb-10" {...revealUp()}>
 
-        {/* Full-width colour-coded verdict banner */}
-        <div className={`rounded-2xl border px-8 py-14 text-center mb-8 ${bannerBg}`}>
-          <p className="font-mono text-2xs tracking-widest uppercase text-muted mb-5">
+        {/* Full-width animated gradient verdict banner */}
+        <div className={`rounded-2xl px-8 py-14 text-center mb-8 ${verdictClass}`}>
+          <p className="font-mono text-2xs tracking-widest uppercase text-white/70 mb-5">
             Hiring Verdict
           </p>
           <h1
-            className={`text-6xl sm:text-7xl lg:text-[5.5rem] font-light leading-none tracking-tight mb-5 ${verdictColor}`}
-            style={{ fontFamily: "var(--font-fraunces)" }}
+            className={`text-6xl sm:text-7xl lg:text-[5.5rem] font-light leading-none tracking-tight mb-5 ${verdictTextColor}`}
+            style={{ fontFamily: "var(--font-fraunces)", textShadow: "0 2px 20px rgba(0,0,0,0.2)" }}
           >
             {r.verdict}
           </h1>
-          <p className="font-mono text-xs text-muted">
+          <p className="font-mono text-xs text-white/70">
             {config.level} {config.profession}&ensp;&middot;&ensp;
             {config.questionCount} questions&ensp;&middot;&ensp;
             {config.interviewType}
             {config.includeChallenge && <>&ensp;&middot;&ensp;practical challenge</>}
           </p>
+          {showConfetti && (
+            <p className="text-white/80 text-sm mt-4 font-medium">🎉 Congratulations!</p>
+          )}
         </div>
 
         {/* Score ring + recommendation + strengths/improvements */}
-        <div className="card-md rounded-xl p-8 flex flex-col sm:flex-row items-center gap-8 text-left">
+        <div
+          className="rounded-xl p-8 flex flex-col sm:flex-row items-center gap-8 text-left"
+          style={{
+            background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+            boxShadow: "var(--shadow-card-md)",
+            border: "1px solid var(--c-border)",
+          }}
+        >
           <ScoreRing score={r.overallScore} size={140} label="Overall Score" />
           <div className="flex-1">
             <p
@@ -93,12 +251,12 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
             </p>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
-                <p className="font-mono text-2xs text-success tracking-widest uppercase mb-2.5">Top Strengths</p>
+                <p className="font-mono text-2xs text-success tracking-widest uppercase mb-2.5">✅ Top Strengths</p>
                 <ul className="space-y-2">
                   {r.strengths.map((s, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-charcoal">
                       <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-success-light flex items-center justify-center">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#3d9970" strokeWidth="3">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#06d6a0" strokeWidth="3">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       </span>
@@ -108,12 +266,12 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
                 </ul>
               </div>
               <div>
-                <p className="font-mono text-2xs text-danger tracking-widest uppercase mb-2.5">To Improve</p>
+                <p className="font-mono text-2xs text-danger tracking-widest uppercase mb-2.5">⚠️ To Improve</p>
                 <ul className="space-y-2">
                   {r.improvements.map((s, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-charcoal">
                       <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-danger-light flex items-center justify-center">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#e05252" strokeWidth="3">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ef476f" strokeWidth="3">
                           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
                       </span>
@@ -165,7 +323,10 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.42, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] as const }}
             >
-              <div className="px-6 py-4 border-b border-border flex items-start justify-between gap-4">
+              <div
+                className="px-6 py-4 border-b border-border flex items-start justify-between gap-4"
+                style={{ background: "linear-gradient(145deg, #ffffff, #f8f6f0)" }}
+              >
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <span className="font-mono text-2xs text-muted shrink-0 mt-1">Q{i + 1}</span>
                   <p
@@ -186,7 +347,7 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="rounded-md p-4 border-l-2 border-success bg-success-light/50">
-                    <p className="font-mono text-2xs text-success tracking-widest uppercase mb-2">What Worked</p>
+                    <p className="font-mono text-2xs text-success tracking-widest uppercase mb-2">✅ What Worked</p>
                     <ul className="space-y-1.5">
                       {q.strengths.map((s, j) => (
                         <li key={j} className="text-sm text-charcoal flex gap-2 items-start">
@@ -196,7 +357,7 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
                     </ul>
                   </div>
                   <div className="rounded-md p-4 border-l-2 border-danger bg-danger-light/50">
-                    <p className="font-mono text-2xs text-danger tracking-widest uppercase mb-2">What Was Missing</p>
+                    <p className="font-mono text-2xs text-danger tracking-widest uppercase mb-2">⚠️ What Was Missing</p>
                     <ul className="space-y-1.5">
                       {q.gaps.map((g, j) => (
                         <li key={j} className="text-sm text-charcoal flex gap-2 items-start">
@@ -207,8 +368,8 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
                   </div>
                 </div>
 
-                <div className="rounded-md p-4 border-l-2 border-info bg-info-light/50">
-                  <p className="font-mono text-2xs text-info tracking-widest uppercase mb-2">Ideal Answer</p>
+                <div className="rounded-md p-4 border-l-2 border-teal bg-teal-light/40">
+                  <p className="font-mono text-2xs text-teal tracking-widest uppercase mb-2">💡 Ideal Answer</p>
                   <p className="text-sm text-body leading-relaxed italic">{q.idealAnswer}</p>
                 </div>
               </div>
@@ -227,7 +388,10 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
             Challenge Evaluation
           </h2>
           <div className="card rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+            <div
+              className="px-6 py-4 border-b border-border flex items-center justify-between"
+              style={{ background: "linear-gradient(145deg, #ffffff, #f8f6f0)" }}
+            >
               <p className="font-mono text-2xs text-muted tracking-widest uppercase">Practical Challenge Score</p>
               <ScorePill score={r.challenge.score} />
             </div>
@@ -245,17 +409,20 @@ export default function ReportView({ config, report: r }: ReportViewProps) {
                 </div>
               )}
               <div className="rounded-md p-4 border-l-2 border-accent bg-accent-light/30">
-                <p className="font-mono text-2xs text-accent tracking-widest uppercase mb-2">Feedback</p>
+                <p className="font-mono text-2xs text-accent-hover tracking-widest uppercase mb-2">⚡ Feedback</p>
                 <p className="text-sm text-charcoal leading-relaxed">{r.challenge.feedback}</p>
               </div>
-              <div className="rounded-md p-4 border-l-2 border-info bg-info-light/50">
-                <p className="font-mono text-2xs text-info tracking-widest uppercase mb-2">What Great Looks Like</p>
+              <div className="rounded-md p-4 border-l-2 border-teal bg-teal-light/40">
+                <p className="font-mono text-2xs text-teal tracking-widest uppercase mb-2">💡 What Great Looks Like</p>
                 <p className="text-sm text-body leading-relaxed italic">{r.challenge.idealSubmission}</p>
               </div>
             </div>
           </div>
         </motion.div>
       )}
+
+      {/* ── Integrity Report ──────────────────── */}
+      {integrityData && <IntegritySection data={integrityData} />}
     </>
   );
 }

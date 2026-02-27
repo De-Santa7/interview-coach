@@ -7,8 +7,20 @@ export async function POST(req: NextRequest) {
   try {
     const { profession, level } = await req.json();
 
-    const prompt = `You are an expert hiring manager creating a practical interview challenge for a ${level} ${profession} candidate.
+    const isNewGrad = level === "New Graduate";
 
+    const newGradScope = isNewGrad ? `
+IMPORTANT — NEW GRADUATE TIER:
+This candidate is a recent graduate with little or no professional experience.
+Make the challenge SIMPLER and more FOUNDATIONAL:
+- For CODE roles: a straightforward algorithmic problem, basic CRUD function, or simple data transformation — not system design
+- For WRITING roles: a shorter, more structured task that demonstrates basic understanding and communication skills
+- Scope it for someone fresh out of university — test foundational knowledge and clear thinking, not professional expertise
+- The context should be an entry-level task they might receive in their first week on the job
+` : "";
+
+    const prompt = `You are an expert hiring manager creating a practical interview challenge for a ${level} ${profession} candidate.
+${newGradScope}
 First determine the role category from this classification:
 - CODE: Frontend Developer, Backend Developer, Full-Stack Developer, Mobile Developer, DevOps Engineer, Data Scientist, Data Engineer, Machine Learning Engineer, AI/ML Researcher, Cybersecurity Analyst, Cloud Engineer, QA Engineer, Blockchain Developer, Software Engineer, Site Reliability Engineer, Embedded Systems Engineer, Game Developer, Business Intelligence Engineer
 - CLINICAL: Nurse, Doctor, Pharmacist, Physiotherapist, Medical Lab Scientist, Radiographer, Clinical Psychologist, Dentist, Public Health Officer
@@ -48,7 +60,7 @@ MANAGEMENT roles → Write a project kick-off brief, a product requirements docu
 
 The challenge must be:
 - Realistic and role-authentic — something actually encountered in ${profession} work
-- Scoped for 15 minutes at ${level} experience level
+- Scoped for 15 minutes at ${level} experience level${isNewGrad ? " (foundational, accessible to a recent graduate)" : ""}
 - Specific enough that the candidate knows exactly what to write/produce
 - Set in a clear fictional company/scenario context
 

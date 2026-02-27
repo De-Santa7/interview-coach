@@ -8,13 +8,90 @@ import Header from "@/components/Header";
 import LogoIcon from "@/components/LogoIcon";
 import { PROFESSION_CATEGORIES, filterProfessions } from "@/lib/professions";
 
-/* ── Ease ─────────────────────────────────────────── */
 const ease = [0.16, 1, 0.3, 1] as const;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
   show: (d = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.65, delay: d, ease } }),
 };
+
+/* ── Animated cycling profession text ────────────── */
+const CYCLING_ROLES = [
+  "Frontend Developers",
+  "Registered Nurses",
+  "Lawyers",
+  "Product Managers",
+  "Data Scientists",
+  "Financial Analysts",
+  "UX Designers",
+  "Marketing Managers",
+  "Mechanical Engineers",
+  "Teachers",
+];
+
+function CyclingText() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % CYCLING_ROLES.length);
+    }, 2600);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="inline-block" style={{ color: "#e8b923" }}>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={index}
+          className="inline-block"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.35 }}
+        >
+          {CYCLING_ROLES[index]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/* ── Animated stat counter ───────────────────────── */
+function StatCounter({ target, label, suffix = "" }: { target: number; label: string; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        let start = 0;
+        const step = target / 40;
+        const id = setInterval(() => {
+          start += step;
+          if (start >= target) { setCount(target); clearInterval(id); }
+          else setCount(Math.floor(start));
+        }, 30);
+      }
+    });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return (
+    <div ref={ref} className="text-center">
+      <div
+        className="text-3xl sm:text-4xl font-light"
+        style={{ fontFamily: "var(--font-fraunces)", color: "#e8b923" }}
+      >
+        {count}{suffix}
+      </div>
+      <div className="text-xs text-white/40 font-mono tracking-wide uppercase mt-1">{label}</div>
+    </div>
+  );
+}
 
 /* ── Hero search bar ─────────────────────────────── */
 function HeroSearch() {
@@ -73,7 +150,8 @@ function HeroSearch() {
         <button
           type="button"
           onClick={() => go(value)}
-          className="shrink-0 m-1.5 px-3 sm:px-6 py-3 rounded-lg bg-accent hover:bg-accent-hover transition-colors text-white font-semibold text-sm whitespace-nowrap"
+          className="shrink-0 m-1.5 px-3 sm:px-6 py-3 rounded-lg transition-colors text-white font-semibold text-sm whitespace-nowrap"
+          style={{ background: "linear-gradient(135deg, #e8b923, #c49a2a)", boxShadow: "0 2px 12px rgba(232,185,35,0.4)" }}
         >
           <span className="sm:hidden">→</span>
           <span className="hidden sm:inline">Start Practice →</span>
@@ -94,7 +172,7 @@ function HeroSearch() {
               <button
                 key={s}
                 type="button"
-                className="w-full text-left px-5 py-3 text-sm text-charcoal hover:bg-accent-light hover:text-accent transition-colors flex items-center gap-2.5"
+                className="w-full text-left px-5 py-3 text-sm text-charcoal hover:bg-accent-light hover:text-accent-hover transition-colors flex items-center gap-2.5"
                 onClick={() => pick(s)}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-muted/40 flex-shrink-0"/>
@@ -113,7 +191,7 @@ function HeroChip({ role }: { role: string }) {
   return (
     <Link
       href={`/setup?role=${encodeURIComponent(role)}`}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/12 hover:bg-white/22 border border-white/20 hover:border-white/45 text-white/80 hover:text-white text-xs font-medium transition-all duration-150 whitespace-nowrap backdrop-blur-sm"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/22 border border-white/20 hover:border-white/45 text-white/80 hover:text-white text-xs font-medium transition-all duration-150 whitespace-nowrap backdrop-blur-sm"
     >
       {role}
     </Link>
@@ -126,19 +204,53 @@ const STEPS = [
     n: "01",
     title: "Configure your session",
     desc: "Choose your role, experience level, interview type, and question count.",
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M19.07 4.93A10 10 0 0 1 4.93 19.07"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>,
+    icon: "⚙️",
+    color: "#e8b923",
   },
   {
     n: "02",
     title: "Answer interview questions",
     desc: "Type or speak your answers to realistic, role-calibrated questions.",
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    icon: "💬",
+    color: "#00b4d8",
   },
   {
     n: "03",
     title: "Receive your hiring verdict",
     desc: "Complete a role-specific challenge and get an honest AI hiring report.",
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+    icon: "📋",
+    color: "#06d6a0",
+  },
+];
+
+/* ── Testimonials ────────────────────────────────── */
+const TESTIMONIALS = [
+  {
+    name: "Sarah K.",
+    role: "Frontend Developer",
+    company: "Hired at a Series B startup",
+    text: "I went in completely cold for my React interview and bombed it. After two weeks of using InterviewCoach daily, I landed an offer at my dream company. The AI feedback was brutally honest — exactly what I needed.",
+    rating: 5,
+    avatar: "SK",
+    color: "#e8b923",
+  },
+  {
+    name: "James M.",
+    role: "Registered Nurse",
+    company: "Accepted into ICU residency",
+    text: "I didn't expect an AI tool to understand clinical scenarios, but the questions were genuinely realistic. It helped me structure my STAR answers for behavioral rounds and I felt way more confident walking in.",
+    rating: 5,
+    avatar: "JM",
+    color: "#00b4d8",
+  },
+  {
+    name: "Priya L.",
+    role: "Product Manager",
+    company: "Joined a Fortune 500 company",
+    text: "The practical challenge feature is what sets this apart. I got a real PRD writing task that was almost identical to what I faced in my actual interview. The AI verdict gave me a clear picture of where I stood.",
+    rating: 5,
+    avatar: "PL",
+    color: "#06d6a0",
   },
 ];
 
@@ -151,40 +263,44 @@ export default function Home() {
       ═══════════════════════════════════════════ */}
       <section className="relative min-h-screen flex flex-col overflow-hidden">
 
-        {/* ── Background: real image as watermark ── */}
+        {/* Background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/hero-bg.jpg"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-          style={{ opacity: 0.22 }}
+          style={{ opacity: 0.2 }}
         />
 
-        {/* Dark overlay for text readability */}
+        {/* Dark gradient overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            opacity: 0.92,
+          }}
+        />
+
+        {/* Gold glow accents */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(160deg, rgba(10,9,7,0.88) 0%, rgba(14,12,9,0.72) 50%, rgba(10,9,7,0.90) 100%)",
+              "radial-gradient(ellipse 55% 50% at 8% 12%, rgba(232,185,35,0.15) 0%, transparent 60%), radial-gradient(ellipse 45% 40% at 92% 88%, rgba(0,180,216,0.1) 0%, transparent 60%)",
           }}
         />
 
-        {/* Warm gold glow — top-left & bottom-right accent */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 55% 50% at 8% 12%, rgba(196,154,42,0.13) 0%, transparent 60%), radial-gradient(ellipse 45% 40% at 92% 88%, rgba(196,154,42,0.08) 0%, transparent 60%)",
-          }}
-        />
+        {/* Floating blobs */}
+        <div className="blob blob-gold w-64 h-64" style={{ top: "15%", left: "5%" }} />
+        <div className="blob blob-teal w-80 h-80" style={{ top: "60%", right: "5%" }} />
 
         {/* Header */}
         <div className="relative z-50">
           <Header dark />
         </div>
 
-        {/* ── Hero content — two-column spread ── */}
+        {/* Hero content */}
         <div className="relative z-10 flex-1 flex items-center">
           <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 py-10 sm:py-20 lg:py-28">
 
@@ -199,25 +315,25 @@ export default function Home() {
                 {/* Tag */}
                 <motion.div variants={fadeUp} custom={0}>
                   <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white/75 font-mono text-[10px] tracking-wider sm:tracking-widest uppercase px-3 sm:px-4 py-1.5 rounded-full mb-5 sm:mb-8">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse inline-block" />
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: "#e8b923" }} />
                     AI-Powered Interview Practice
                   </div>
                 </motion.div>
 
-                {/* Headline */}
+                {/* Headline with animated text */}
                 <motion.h1
                   variants={fadeUp}
                   custom={0.06}
                   className="text-[clamp(1.5rem,8.5vw,4.5rem)] lg:text-[5.2rem] xl:text-[6rem] font-light text-white leading-[1.05] tracking-tight mb-5 sm:mb-7"
                   style={{ fontFamily: "var(--font-fraunces)" }}
                 >
-                  Ace every
+                  Preparing
                   <br />
-                  interview.
+                  <CyclingText />
                   <br />
-                  <em className="not-italic" style={{ color: "#c49a2a" }}>
-                    Practice smarter.
-                  </em>
+                  <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.65em" }}>
+                    for what&apos;s next.
+                  </span>
                 </motion.h1>
 
                 {/* Sub */}
@@ -240,22 +356,15 @@ export default function Home() {
                   custom={0.24}
                   className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 pt-5 sm:pt-6 border-t border-white/10"
                 >
-                  <div className="flex items-center gap-5 sm:gap-8">
-                    {[
-                      { n: "80+", label: "Roles" },
-                      { n: "10", label: "Fields" },
-                      { n: "Free", label: "Always" },
-                    ].map(({ n, label }) => (
-                      <div key={label} className="text-center">
-                        <div
-                          className="text-xl sm:text-2xl font-light text-accent"
-                          style={{ fontFamily: "var(--font-fraunces)" }}
-                        >
-                          {n}
-                        </div>
-                        <div className="text-xs text-white/40 font-mono tracking-wide uppercase mt-0.5">{label}</div>
+                  <div className="flex items-center gap-8 sm:gap-12">
+                    <StatCounter target={80} label="Roles" suffix="+" />
+                    <StatCounter target={10} label="Fields" />
+                    <div className="text-center">
+                      <div className="text-3xl sm:text-4xl font-light" style={{ fontFamily: "var(--font-fraunces)", color: "#e8b923" }}>
+                        Free
                       </div>
-                    ))}
+                      <div className="text-xs text-white/40 font-mono tracking-wide uppercase mt-1">Always</div>
+                    </div>
                   </div>
                   <Link href="/setup" className="btn-primary !text-sm !px-6 !py-2.5">
                     Begin →
@@ -294,7 +403,7 @@ export default function Home() {
               </motion.div>
             </div>
 
-            {/* Mobile chips (below fold on small screens) */}
+            {/* Mobile chips */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -319,10 +428,8 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          BELOW FOLD — light background
+          HOW IT WORKS
       ═══════════════════════════════════════════ */}
-
-      {/* How it works */}
       <section className="max-w-6xl mx-auto px-6 sm:px-10 py-16 sm:py-28">
         <motion.div
           className="mb-8 sm:mb-14"
@@ -341,24 +448,38 @@ export default function Home() {
         </motion.div>
 
         <div className="grid sm:grid-cols-3 gap-6">
-          {STEPS.map(({ n, title, desc, icon }, i) => (
+          {STEPS.map(({ n, title, desc, icon, color }, i) => (
             <motion.div
               key={n}
-              className="card p-5 sm:p-7 group"
+              className="relative p-7 group"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+                border: "1px solid var(--c-border)",
+                borderRadius: "18px",
+                boxShadow: "var(--shadow-card)",
+                transition: "all 0.2s ease",
+              }}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.13, ease }}
-              whileHover={{ y: -3, transition: { duration: 0.18 } }}
+              whileHover={{ y: -6, boxShadow: "var(--shadow-card-hover)" }}
             >
+              {/* Connecting line */}
+              {i < STEPS.length - 1 && (
+                <div
+                  className="absolute top-10 -right-3 w-6 h-0.5 hidden sm:block"
+                  style={{ background: `linear-gradient(90deg, ${color}, ${STEPS[i+1].color})` }}
+                />
+              )}
               <div className="flex items-start justify-between mb-6">
                 <span
-                  className="text-4xl font-light text-accent/30 group-hover:text-accent/55 transition-colors"
-                  style={{ fontFamily: "var(--font-fraunces)" }}
+                  className="text-5xl font-light opacity-15 group-hover:opacity-30 transition-opacity"
+                  style={{ fontFamily: "var(--font-fraunces)", color }}
                 >
                   {n}
                 </span>
-                <span className="text-accent/70 group-hover:text-accent transition-colors">{icon}</span>
+                <span className="text-3xl">{icon}</span>
               </div>
               <h3 className="text-base font-semibold text-charcoal mb-2">{title}</h3>
               <p className="text-sm text-body leading-relaxed">{desc}</p>
@@ -367,61 +488,137 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ═══════════════════════════════════════════
+          TESTIMONIALS
+      ═══════════════════════════════════════════ */}
+      <section className="max-w-6xl mx-auto px-6 sm:px-10 pb-16 sm:pb-20">
+        <motion.div
+          className="mb-10"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          <p className="label mb-3">Success stories</p>
+          <h2
+            className="text-2xl sm:text-4xl font-light text-charcoal"
+            style={{ fontFamily: "var(--font-fraunces)" }}
+          >
+            People who landed the role
+          </h2>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-3 gap-6">
+          {TESTIMONIALS.map(({ name, role, company, text, rating, avatar, color }, i) => (
+            <motion.div
+              key={name}
+              className="p-6 flex flex-col gap-4"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+                border: "1px solid var(--c-border)",
+                borderRadius: "18px",
+                boxShadow: "var(--shadow-card)",
+                transition: "all 0.2s ease",
+              }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1, ease }}
+              whileHover={{ y: -4, boxShadow: "var(--shadow-card-hover)" }}
+            >
+              {/* Stars */}
+              <div className="flex gap-1">
+                {Array.from({ length: rating }).map((_, j) => (
+                  <span key={j} style={{ color: "#e8b923" }}>★</span>
+                ))}
+              </div>
+              <p className="text-sm text-charcoal leading-relaxed flex-1 italic">
+                &ldquo;{text}&rdquo;
+              </p>
+              <div className="flex items-center gap-3 pt-3 border-t border-border">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                  style={{ background: color }}
+                >
+                  {avatar}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-charcoal">{name}</p>
+                  <p className="text-xs text-muted">{role} · {company}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          CTA
+      ═══════════════════════════════════════════ */}
       <section className="max-w-6xl mx-auto px-6 sm:px-10 pb-16 sm:pb-28">
         <motion.div
-          className="card-md rounded-xl p-6 sm:p-10 lg:p-14 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 sm:gap-8 bg-gradient-to-br from-surface to-accent-light/40"
+          className="relative overflow-hidden rounded-2xl p-8 sm:p-12 lg:p-16 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-8"
+          style={{
+            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+          }}
           initial={{ opacity: 0, y: 32 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease }}
         >
+          {/* Background glow */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: "radial-gradient(ellipse 60% 60% at 20% 50%, rgba(232,185,35,0.12) 0%, transparent 70%), radial-gradient(ellipse 50% 60% at 80% 50%, rgba(0,180,216,0.1) 0%, transparent 70%)",
+            }}
+          />
           <div>
             <h2
-              className="text-3xl font-light text-charcoal mb-2"
+              className="text-3xl sm:text-4xl font-light text-white mb-3 relative z-10"
               style={{ fontFamily: "var(--font-fraunces)" }}
             >
-              Ready to get started?
+              Ready to get hired?
             </h2>
-            <p className="text-body text-sm">Takes 20–30 minutes for a full session.</p>
+            <p className="text-white/60 text-sm relative z-10">Takes 20–30 minutes for a full session. 80+ roles supported.</p>
           </div>
-          <Link href="/setup" className="btn-primary !text-base !px-10 !py-3.5 shrink-0 w-full sm:w-auto text-center">
+          <Link
+            href="/setup"
+            className="relative z-10 shrink-0 w-full sm:w-auto text-center font-semibold text-base px-10 py-4 rounded-xl text-white transition-all hover:scale-105"
+            style={{
+              background: "linear-gradient(135deg, #e8b923, #c49a2a)",
+              boxShadow: "0 4px 20px rgba(232,185,35,0.4)",
+            }}
+          >
             Begin Session →
           </Link>
         </motion.div>
       </section>
 
       {/* Footer */}
-      <footer style={{ backgroundColor: "#1c1508" }}>
+      <footer style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)" }}>
+        {/* Gold accent top border */}
+        <div style={{ height: "1px", background: "linear-gradient(90deg, #e8b923, #00b4d8, #e8b923)" }} />
         <div className="max-w-6xl mx-auto px-6 sm:px-10 pt-14 pb-10">
-          {/* Top row */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-10 mb-10">
-            {/* Brand */}
             <div className="flex flex-col gap-3 max-w-xs">
               <Link href="/" className="flex items-center gap-2.5 group w-fit">
                 <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shrink-0 group-hover:opacity-90 transition-opacity shadow-sm">
-                    <LogoIcon size={24} />
-                  </div>
-                <span
-                  className="text-lg font-semibold"
-                  style={{ fontFamily: "var(--font-fraunces)" }}
-                >
+                  <LogoIcon size={24} />
+                </div>
+                <span className="text-lg font-semibold" style={{ fontFamily: "var(--font-fraunces)" }}>
                   <span style={{ color: "#ffffff" }}>Interview</span>
-                  <span style={{ color: "#c49a2a" }}>Coach</span>
+                  <span style={{ color: "#e8b923" }}>Coach</span>
                 </span>
               </Link>
-              <p className="text-sm leading-relaxed" style={{ color: "#9c8e7a" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
                 AI-powered practice interviews with real-world challenges and detailed hiring reports.
               </p>
             </div>
 
-            {/* Nav columns */}
             <div className="flex gap-12 sm:gap-16">
               <div>
-                <p
-                  className="text-xs font-semibold tracking-widest uppercase mb-4"
-                  style={{ color: "#c49a2a", fontFamily: "var(--font-mono)" }}
-                >
+                <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#e8b923", fontFamily: "var(--font-mono)" }}>
                   Product
                 </p>
                 <ul className="flex flex-col gap-2.5">
@@ -431,12 +628,9 @@ export default function Home() {
                     { href: "/history", label: "History" },
                   ].map(({ href, label }) => (
                     <li key={href}>
-                      <Link
-                        href={href}
-                        className="text-sm transition-colors duration-150"
-                        style={{ color: "#9c8e7a" }}
+                      <Link href={href} className="text-sm transition-colors duration-150" style={{ color: "rgba(255,255,255,0.45)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9c8e7a")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
                       >
                         {label}
                       </Link>
@@ -446,10 +640,7 @@ export default function Home() {
               </div>
 
               <div>
-                <p
-                  className="text-xs font-semibold tracking-widest uppercase mb-4"
-                  style={{ color: "#c49a2a", fontFamily: "var(--font-mono)" }}
-                >
+                <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: "#e8b923", fontFamily: "var(--font-mono)" }}>
                   Account
                 </p>
                 <ul className="flex flex-col gap-2.5">
@@ -459,12 +650,9 @@ export default function Home() {
                     { href: "/settings", label: "Settings" },
                   ].map(({ href, label }) => (
                     <li key={href}>
-                      <Link
-                        href={href}
-                        className="text-sm transition-colors duration-150"
-                        style={{ color: "#9c8e7a" }}
+                      <Link href={href} className="text-sm transition-colors duration-150" style={{ color: "rgba(255,255,255,0.45)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = "#9c8e7a")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
                       >
                         {label}
                       </Link>
@@ -475,15 +663,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Divider */}
-          <div style={{ height: "1px", backgroundColor: "#2e2010" }} className="mb-6" />
+          <div style={{ height: "1px", backgroundColor: "rgba(255,255,255,0.08)" }} className="mb-6" />
 
-          {/* Bottom row */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="text-xs" style={{ color: "#6b5e48" }}>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
               © {new Date().getFullYear()} InterviewCoach. All rights reserved.
             </p>
-            <p className="text-xs" style={{ color: "#6b5e48" }}>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
               Practice interviews that actually prepare you.
             </p>
           </div>

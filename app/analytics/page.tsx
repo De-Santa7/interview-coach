@@ -30,7 +30,7 @@ interface Analytics {
   scoreOverTime: { date: string; score: number }[];
   scoreByProfession: { profession: string; score: number; count: number }[];
   scoreByType: { type: string; score: number }[];
-  activityMap: Record<string, number>; // "YYYY-MM-DD" → sessions
+  activityMap: Record<string, number>;
   fastestAnswer: { question: string; secs: number } | null;
   slowestAnswer: { question: string; secs: number } | null;
 }
@@ -41,13 +41,11 @@ function buildAnalytics(history: HistoryEntry[]): Analytics {
   const avgScore = avg(scores);
   const bestScore = scores.length ? Math.max(...scores) : 0;
 
-  // Score over time (last 10)
   const scoreOverTime = history
     .slice(0, 10)
     .reverse()
     .map((h) => ({ date: fmtDate(h.timestamp), score: h.report.overallScore }));
 
-  // Score by profession
   const byProf: Record<string, number[]> = {};
   history.forEach((h) => {
     const p = h.config.profession;
@@ -59,7 +57,6 @@ function buildAnalytics(history: HistoryEntry[]): Analytics {
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 
-  // Score by interview type
   const byType: Record<string, number[]> = {};
   history.forEach((h) => {
     const t = h.config.interviewType;
@@ -68,21 +65,18 @@ function buildAnalytics(history: HistoryEntry[]): Analytics {
   });
   const scoreByType = Object.entries(byType).map(([type, s]) => ({ type, score: avg(s) }));
 
-  // Average answer time
   const allTimes: number[] = [];
   history.forEach((h) =>
     h.answers.forEach((a) => { if (a.timeTaken) allTimes.push(a.timeTaken); })
   );
   const avgTimeSecs = avg(allTimes);
 
-  // Activity map: last 365 days
   const activityMap: Record<string, number> = {};
   history.forEach((h) => {
     const d = new Date(h.timestamp).toISOString().split("T")[0];
     activityMap[d] = (activityMap[d] ?? 0) + 1;
   });
 
-  // Fastest / slowest answers
   type TimedAnswer = { question: string; secs: number };
   let fastest: TimedAnswer | null = null;
   let slowest: TimedAnswer | null = null;
@@ -99,11 +93,35 @@ function buildAnalytics(history: HistoryEntry[]): Analytics {
   return { totalSessions, avgScore, avgTimeSecs, bestScore, scoreOverTime, scoreByProfession, scoreByType, activityMap, fastestAnswer: fastest, slowestAnswer: slowest };
 }
 
-/* ── Stat card ─────────────────────────────────── */
-function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+/* ── Stat card with gradient ───────────────────── */
+function Stat({
+  label,
+  value,
+  sub,
+  icon,
+  gradient,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  icon: string;
+  gradient: string;
+}) {
   return (
-    <div className="card-md rounded-xl p-5">
-      <p className="text-xs text-muted font-mono tracking-wider uppercase mb-1">{label}</p>
+    <div
+      className="rounded-xl p-5 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+        border: "1px solid var(--c-border)",
+        boxShadow: "var(--shadow-card-md)",
+      }}
+    >
+      <div
+        className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-10"
+        style={{ background: gradient }}
+      />
+      <p className="text-3xl mb-1" style={{ lineHeight: 1 }}>{icon}</p>
+      <p className="text-xs text-muted font-mono tracking-wider uppercase mb-1 mt-2">{label}</p>
       <p className="text-3xl font-light text-charcoal" style={{ fontFamily: "var(--font-fraunces)" }}>
         {value}
       </p>
@@ -118,10 +136,8 @@ function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Build 52 weeks × 7 days grid ending today
   const startDay = new Date(today);
   startDay.setDate(startDay.getDate() - (52 * 7 - 1));
-  // Align to Sunday
   startDay.setDate(startDay.getDate() - startDay.getDay());
 
   let week: { date: string; count: number }[] = [];
@@ -136,9 +152,9 @@ function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> 
 
   function cellColor(count: number) {
     if (count === 0) return "bg-border";
-    if (count === 1) return "bg-accent/30";
-    if (count === 2) return "bg-accent/60";
-    return "bg-accent";
+    if (count === 1) return "bg-teal/25";
+    if (count === 2) return "bg-teal/55";
+    return "bg-teal";
   }
 
   const months: string[] = [];
@@ -154,17 +170,22 @@ function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> 
   });
 
   return (
-    <div className="card-md rounded-xl p-6">
+    <div
+      className="rounded-xl p-6"
+      style={{
+        background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+        border: "1px solid var(--c-border)",
+        boxShadow: "var(--shadow-card-md)",
+      }}
+    >
       <p className="text-xs text-muted font-mono tracking-wider uppercase mb-4">Activity — Last Year</p>
       <div className="overflow-x-auto pb-1">
         <div className="inline-flex flex-col gap-0.5 min-w-max">
-          {/* Month labels */}
           <div className="flex gap-0.5 mb-1 pl-6">
             {months.map((m, i) => (
               <div key={i} className="w-3 text-[9px] text-muted font-mono">{m}</div>
             ))}
           </div>
-          {/* Day rows */}
           {["S","M","T","W","T","F","S"].map((day, di) => (
             <div key={di} className="flex items-center gap-0.5">
               <span className="w-5 text-[9px] text-muted font-mono text-right pr-1 shrink-0">
@@ -185,7 +206,6 @@ function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> 
           ))}
         </div>
       </div>
-      {/* Legend */}
       <div className="flex items-center gap-1.5 mt-3">
         <span className="text-[10px] text-muted">Less</span>
         {[0,1,2,3].map((v) => (
@@ -201,7 +221,13 @@ function ActivityHeatmap({ activityMap }: { activityMap: Record<string, number> 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: {value: number}[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="card-md rounded-lg px-3 py-2 text-xs shadow-card-md">
+    <div
+      className="rounded-lg px-3 py-2 text-xs shadow-card-md"
+      style={{
+        background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+        border: "1px solid var(--c-border)",
+      }}
+    >
       <p className="text-muted mb-0.5">{label}</p>
       <p className="font-semibold text-charcoal">{payload[0].value}</p>
     </div>
@@ -212,11 +238,8 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 function EmptyState() {
   return (
     <div className="text-center py-20">
-      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-light border border-accent-mid mb-5">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c49a2a" strokeWidth="1.8">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-        </svg>
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent-light border border-accent-mid mb-5 text-3xl">
+        📊
       </div>
       <h2 className="text-xl font-light text-charcoal mb-2" style={{ fontFamily: "var(--font-fraunces)" }}>
         No data yet
@@ -272,7 +295,7 @@ export default function AnalyticsPage() {
       <Header />
       <main className="max-w-5xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
 
-        {/* ── Page header ─────────────────────── */}
+        {/* Page header */}
         <div className="mb-10">
           <p className="label mb-1">Your Progress</p>
           <h1 className="text-3xl sm:text-4xl font-light text-charcoal" style={{ fontFamily: "var(--font-fraunces)" }}>
@@ -280,17 +303,45 @@ export default function AnalyticsPage() {
           </h1>
         </div>
 
-        {/* ── Stats row ────────────────────────── */}
+        {/* Stats row with gradient cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <Stat label="Sessions" value={totalSessions} />
-          <Stat label="Avg Score" value={`${avgScore}/100`} />
-          <Stat label="Avg Time / Q" value={avgTimeSecs > 0 ? fmtTime(avgTimeSecs) : "—"} sub="per question" />
-          <Stat label="Best Score" value={`${bestScore}/100`} />
+          <Stat
+            label="Sessions"
+            value={totalSessions}
+            icon="🎯"
+            gradient="linear-gradient(135deg, #e8b923, #c49a2a)"
+          />
+          <Stat
+            label="Avg Score"
+            value={`${avgScore}/100`}
+            icon="📈"
+            gradient="linear-gradient(135deg, #00b4d8, #0077b6)"
+          />
+          <Stat
+            label="Avg Time / Q"
+            value={avgTimeSecs > 0 ? fmtTime(avgTimeSecs) : "—"}
+            sub="per question"
+            icon="⏱️"
+            gradient="linear-gradient(135deg, #06d6a0, #118ab2)"
+          />
+          <Stat
+            label="Best Score"
+            value={`${bestScore}/100`}
+            icon="🏆"
+            gradient="linear-gradient(135deg, #ffd166, #e8b923)"
+          />
         </div>
 
-        {/* ── Score over time ──────────────────── */}
+        {/* Score over time */}
         {scoreOverTime.length > 1 && (
-          <div className="card-md rounded-xl p-6 mb-6">
+          <div
+            className="rounded-xl p-6 mb-6"
+            style={{
+              background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+              border: "1px solid var(--c-border)",
+              boxShadow: "var(--shadow-card-md)",
+            }}
+          >
             <p className="text-xs text-muted font-mono tracking-wider uppercase mb-5">Score Over Time</p>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={scoreOverTime} margin={{ top: 4, right: 8, bottom: 0, left: -24 }}>
@@ -300,21 +351,33 @@ export default function AnalyticsPage() {
                 <Tooltip content={<ChartTooltip />} />
                 <Line
                   type="monotone" dataKey="score"
-                  stroke="#c49a2a" strokeWidth={2.5}
-                  dot={{ fill: "#c49a2a", r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke="url(#goldTeal)" strokeWidth={2.5}
+                  dot={{ fill: "#e8b923", r: 4 }}
+                  activeDot={{ r: 6, fill: "#00b4d8" }}
                 />
+                <defs>
+                  <linearGradient id="goldTeal" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#e8b923" />
+                    <stop offset="100%" stopColor="#00b4d8" />
+                  </linearGradient>
+                </defs>
               </LineChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* ── Two-column: by profession + by type ─ */}
+        {/* Two-column: by profession + by type */}
         <div className="grid sm:grid-cols-2 gap-6 mb-6">
 
-          {/* By profession */}
           {scoreByProfession.length > 0 && (
-            <div className="card-md rounded-xl p-6">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+                border: "1px solid var(--c-border)",
+                boxShadow: "var(--shadow-card-md)",
+              }}
+            >
               <p className="text-xs text-muted font-mono tracking-wider uppercase mb-5">Avg Score by Role</p>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart
@@ -330,15 +393,27 @@ export default function AnalyticsPage() {
                     tickFormatter={(v: string) => v.length > 16 ? v.slice(0, 14) + "…" : v}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="score" fill="#c49a2a" radius={[0, 4, 4, 0]} maxBarSize={20} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#e8b923" />
+                      <stop offset="100%" stopColor="#00b4d8" />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="score" fill="url(#barGradient)" radius={[0, 4, 4, 0]} maxBarSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* By interview type */}
           {scoreByType.length > 0 && (
-            <div className="card-md rounded-xl p-6">
+            <div
+              className="rounded-xl p-6"
+              style={{
+                background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+                border: "1px solid var(--c-border)",
+                boxShadow: "var(--shadow-card-md)",
+              }}
+            >
               <p className="text-xs text-muted font-mono tracking-wider uppercase mb-5">Avg Score by Type</p>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={scoreByType} margin={{ top: 4, right: 8, bottom: 0, left: -24 }}>
@@ -346,25 +421,30 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="type" tick={{ fontSize: 11, fill: "var(--c-muted)", fontFamily: "var(--font-mono)" }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "var(--c-muted)", fontFamily: "var(--font-mono)" }} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="score" fill="#c49a2a" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                  <defs>
+                    <linearGradient id="barGradient2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#00b4d8" />
+                      <stop offset="100%" stopColor="#e8b923" />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="score" fill="url(#barGradient2)" radius={[4, 4, 0, 0]} maxBarSize={60} />
                 </BarChart>
               </ResponsiveContainer>
 
-              {/* Fastest / slowest */}
               {(fastestAnswer || slowestAnswer) && (
                 <div className="mt-5 pt-5 border-t border-border space-y-3">
                   {fastestAnswer && (
                     <div>
                       <p className="text-[10px] font-mono text-muted tracking-wider uppercase mb-1">⚡ Fastest Answer</p>
                       <p className="text-xs text-charcoal line-clamp-2">{fastestAnswer.question}</p>
-                      <p className="text-xs text-accent font-mono mt-0.5">{fmtTime(fastestAnswer.secs)}</p>
+                      <p className="text-xs font-mono mt-0.5" style={{ color: "#00b4d8" }}>{fmtTime(fastestAnswer.secs)}</p>
                     </div>
                   )}
                   {slowestAnswer && (
                     <div>
                       <p className="text-[10px] font-mono text-muted tracking-wider uppercase mb-1">🐢 Slowest Answer</p>
                       <p className="text-xs text-charcoal line-clamp-2">{slowestAnswer.question}</p>
-                      <p className="text-xs text-accent font-mono mt-0.5">{fmtTime(slowestAnswer.secs)}</p>
+                      <p className="text-xs font-mono mt-0.5" style={{ color: "#e8b923" }}>{fmtTime(slowestAnswer.secs)}</p>
                     </div>
                   )}
                 </div>
@@ -373,10 +453,10 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* ── Activity heatmap ─────────────────── */}
+        {/* Activity heatmap */}
         <ActivityHeatmap activityMap={activityMap} />
 
-        {/* ── CTA ──────────────────────────────── */}
+        {/* CTA */}
         <div className="text-center mt-10">
           <Link href="/setup" className="btn-primary !px-10 !py-3">
             Start a New Session →

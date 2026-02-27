@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import BackButton from "@/components/BackButton";
 import { useSession } from "@/lib/session-context";
 import { createClient } from "@/lib/supabase/client";
+import { IntegrityData, IntegrityEvent } from "@/lib/types";
 
 /* ── Speech Recognition types ──────────────────── */
 interface SpeechRecognitionEvent extends Event {
@@ -32,10 +33,12 @@ declare global {
 }
 
 /* ── Types ─────────────────────────────────────── */
-type CameraState = "requesting" | "granted" | "denied";
+type CameraState = "idle" | "requesting" | "granted" | "denied";
 type DistractionLevel = 0 | 1 | 2 | 3; // 0=clean 1=warn 2=final-warn 3=critical
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FaceApiModule = any;
+
+const INTEGRITY_KEY = "interview-coach-integrity";
 
 /* ── Timer helper ───────────────────────────────── */
 function getQuestionDuration(interviewType: string, questionCategory?: string): number {
@@ -44,7 +47,7 @@ function getQuestionDuration(interviewType: string, questionCategory?: string): 
   return questionCategory === "Technical" ? 3 * 60 : 2 * 60;
 }
 
-/* ── Countdown Ring ─────────────────────────────── */
+/* ── Countdown Ring (gradient SVG) ─────────────── */
 function CountdownRing({ timeLeft, total }: { timeLeft: number; total: number }) {
   const radius = 28;
   const circ = 2 * Math.PI * radius;
@@ -52,7 +55,8 @@ function CountdownRing({ timeLeft, total }: { timeLeft: number; total: number })
   const offset = circ * (1 - pct);
   const isRed = timeLeft <= 10;
   const isAmber = timeLeft <= 30 && !isRed;
-  const strokeColor = isRed ? "#e05252" : isAmber ? "#f97316" : "#c49a2a";
+  const gradId = isRed ? "ring-red" : isAmber ? "ring-amber" : "ring-gold";
+  const strokeColor = isRed ? "#ef476f" : isAmber ? "#ffd166" : "#e8b923";
   const pulseClass = isRed ? "timer-pulse-red" : isAmber ? "timer-pulse-amber" : "";
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
@@ -60,10 +64,16 @@ function CountdownRing({ timeLeft, total }: { timeLeft: number; total: number })
   return (
     <div className={`relative w-16 h-16 shrink-0 ${pulseClass}`}>
       <svg width="64" height="64" style={{ transform: "rotate(-90deg)" }}>
+        <defs>
+          <linearGradient id={`${gradId}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={strokeColor} />
+            <stop offset="100%" stopColor={isRed ? "#c0392b" : isAmber ? "#e8b923" : "#00b4d8"} />
+          </linearGradient>
+        </defs>
         <circle cx="32" cy="32" r={radius} fill="none" stroke="var(--ring-track)" strokeWidth="4" />
         <circle
           cx="32" cy="32" r={radius} fill="none"
-          stroke={strokeColor} strokeWidth="4" strokeLinecap="round"
+          stroke={`url(#${gradId})`} strokeWidth="4" strokeLinecap="round"
           strokeDasharray={circ} strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s ease" }}
         />
@@ -87,7 +97,7 @@ function CameraGate({ state, onRequest }: { state: CameraState; onRequest: () =>
         <Header />
         <main className="max-w-md mx-auto px-5 py-24 flex flex-col items-center text-center">
           <div className="w-20 h-20 rounded-full bg-accent-light border-2 border-accent-mid flex items-center justify-center mb-6 animate-pulse">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#c49a2a" strokeWidth="1.5">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e8b923" strokeWidth="1.5">
               <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
             </svg>
           </div>
@@ -98,7 +108,7 @@ function CameraGate({ state, onRequest }: { state: CameraState; onRequest: () =>
             InterviewCoach uses your camera to simulate a real interview environment and monitor attention. No video is recorded or stored.
           </p>
           <button onClick={onRequest} className="btn-primary !px-10 !py-3.5 !text-base">
-            Enable Camera & Begin →
+            Enable Camera &amp; Begin →
           </button>
           <button
             onClick={() => router.push("/setup")}
@@ -117,7 +127,7 @@ function CameraGate({ state, onRequest }: { state: CameraState; onRequest: () =>
       <Header />
       <main className="max-w-md mx-auto px-5 py-24 flex flex-col items-center text-center">
         <div className="w-20 h-20 rounded-full bg-danger-light border-2 border-danger/30 flex items-center justify-center mb-6">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e05252" strokeWidth="1.5">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef476f" strokeWidth="1.5">
             <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
             <line x1="1" y1="1" x2="23" y2="23" strokeWidth="2"/>
           </svg>
@@ -162,11 +172,10 @@ function DistractionWarning({
 }) {
   if (level === 0) return null;
 
-  // Level 1 — toast
   if (level === 1) {
     return (
       <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
-        <div className="flex items-center gap-3 bg-amber-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm">
+        <div className="flex items-center gap-3 bg-warning text-charcoal px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm border border-warning/60">
           <span className="text-lg shrink-0">👀</span>
           <span>Eyes on screen — distraction detected</span>
         </div>
@@ -174,11 +183,10 @@ function DistractionWarning({
     );
   }
 
-  // Level 2 — persistent banner
   if (level === 2) {
     return (
       <div className="fixed top-14 left-0 right-0 z-50 animate-fade-in">
-        <div className="bg-orange-500 text-white px-5 py-3 flex items-center justify-between gap-4">
+        <div className="bg-danger text-white px-5 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xl shrink-0">⚠️</span>
             <span className="text-sm font-medium">
@@ -195,7 +203,6 @@ function DistractionWarning({
     );
   }
 
-  // Level 3 — critical modal
   return (
     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-5 animate-fade-in">
       <div className="bg-danger rounded-2xl p-8 text-white text-center max-w-sm w-full shadow-2xl">
@@ -220,11 +227,21 @@ function DistractionWarning({
   );
 }
 
-/* ── Webcam Feed (required, always shown) ───────── */
-function WebcamFeed({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement | null> }) {
+/* ── Webcam Feed with face detection status ─────── */
+function WebcamFeed({
+  videoRef,
+  faceDetected,
+}: {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  faceDetected: boolean;
+}) {
   return (
     <div className="fixed top-16 right-3 z-40 hidden sm:block">
-      <div className="relative w-44 h-[110px] rounded-xl overflow-hidden border-2 border-accent shadow-card-md bg-black">
+      <div
+        className={`relative w-44 h-[110px] rounded-xl overflow-hidden border-2 shadow-card-md bg-black transition-all duration-500 ${
+          faceDetected ? "webcam-ok" : "webcam-warn"
+        }`}
+      >
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
@@ -232,12 +249,16 @@ function WebcamFeed({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement |
           className="w-full h-full object-cover"
         />
         <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-          <span className="font-mono text-[9px] text-white tracking-wider">REC</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${faceDetected ? "bg-success" : "bg-danger animate-pulse"}`} />
+          <span className="font-mono text-[9px] text-white tracking-wider">
+            {faceDetected ? "LIVE" : "NO FACE"}
+          </span>
         </div>
       </div>
-      <p className="text-center font-mono text-[9px] text-muted mt-1 tracking-wide">
-        You are being monitored
+      <p className={`text-center font-mono text-[9px] mt-1.5 tracking-wide transition-colors ${
+        faceDetected ? "text-success" : "text-danger"
+      }`}>
+        {faceDetected ? "👁 Monitoring active" : "⚠️ Look at screen"}
       </p>
     </div>
   );
@@ -246,13 +267,14 @@ function WebcamFeed({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement |
 /* ── Main Page ──────────────────────────────────── */
 export default function InterviewPage() {
   const router = useRouter();
-  const { state, setAnswer } = useSession();
+  const { state, setAnswer, hydrated } = useSession();
   const { config, questions, answers, challenge } = state;
 
   /* Camera + detection */
-  const [cameraState, setCameraState] = useState<CameraState>("requesting");
+  const [cameraState, setCameraState] = useState<CameraState>("idle");
   const [distractionLevel, setDistractionLevel] = useState<DistractionLevel>(0);
   const [logoutCountdown, setLogoutCountdown] = useState(10);
+  const [faceDetected, setFaceDetected] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const faceapiRef = useRef<FaceApiModule>(null);
@@ -260,6 +282,12 @@ export default function InterviewPage() {
   const logoutTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const distractionCountRef = useRef(0);
   const consecutiveRef = useRef(0);
+
+  /* Integrity tracking */
+  const integrityEventsRef = useRef<IntegrityEvent[]>([]);
+  const warningCountRef = useRef(0);
+  const faceAbsenceStartRef = useRef<number | null>(null);
+  const totalFaceAbsenceMsRef = useRef(0);
 
   /* Interview state */
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -284,8 +312,9 @@ export default function InterviewPage() {
   }, []);
 
   useEffect(() => {
+    if (!hydrated) return;
     if (!config || questions.length === 0) router.replace("/setup");
-  }, [config, questions, router]);
+  }, [hydrated, config, questions, router]);
 
   /* ── Camera permission request ─────────────────── */
   function requestCamera() {
@@ -294,22 +323,59 @@ export default function InterviewPage() {
       .getUserMedia({ video: { width: 320, height: 240, facingMode: "user" }, audio: false })
       .then((stream) => {
         streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
         setCameraState("granted");
         loadFaceDetection();
       })
       .catch(() => setCameraState("denied"));
   }
 
-  // Auto-request on mount
   useEffect(() => {
-    requestCamera();
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       if (detectionRef.current) clearInterval(detectionRef.current);
       if (logoutTimerRef.current) clearInterval(logoutTimerRef.current);
+      // Save integrity data before unmounting
+      saveIntegrityData();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (cameraState !== "granted") return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (video && stream) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
+  }, [cameraState]);
+
+  /* ── Integrity data persistence ─────────────────── */
+  function saveIntegrityData() {
+    try {
+      // Finalize any open absence window
+      let totalMs = totalFaceAbsenceMsRef.current;
+      if (faceAbsenceStartRef.current !== null) {
+        totalMs += Date.now() - faceAbsenceStartRef.current;
+      }
+      const wc = warningCountRef.current;
+      // Score: 100 - (warnings * 10) - (totalMs / 1000 / 5)
+      // Each warning costs 10 pts, each 5s of absence costs 1 pt
+      const deduction = wc * 10 + Math.floor(totalMs / 5000);
+      const score = Math.max(0, 100 - deduction);
+      const verdict =
+        score >= 85 ? "High Integrity" :
+        score >= 60 ? "Medium Integrity" : "Low Integrity";
+
+      const data: IntegrityData = {
+        events: integrityEventsRef.current,
+        warningCount: wc,
+        totalFaceAbsenceMs: totalMs,
+        score,
+        verdict,
+      };
+      localStorage.setItem(INTEGRITY_KEY, JSON.stringify(data));
+    } catch { /* ignore */ }
+  }
 
   /* ── Face detection model loading ─────────────── */
   async function loadFaceDetection() {
@@ -331,6 +397,7 @@ export default function InterviewPage() {
   const triggerDistraction = useCallback(() => {
     consecutiveRef.current = 0;
     distractionCountRef.current += 1;
+    warningCountRef.current += 1;
     const count = distractionCountRef.current;
 
     if (count === 1) {
@@ -355,9 +422,22 @@ export default function InterviewPage() {
         .withFaceLandmarks(true);
 
       if (!detection) {
+        setFaceDetected(false);
         consecutiveRef.current += 1;
+        // Start tracking absence time
+        if (faceAbsenceStartRef.current === null) {
+          faceAbsenceStartRef.current = Date.now();
+          integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_left" });
+        }
         if (consecutiveRef.current >= 2) triggerDistraction();
         return;
+      }
+
+      // Face found — end any absence window
+      if (faceAbsenceStartRef.current !== null) {
+        totalFaceAbsenceMsRef.current += Date.now() - faceAbsenceStartRef.current;
+        faceAbsenceStartRef.current = null;
+        integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_returned" });
       }
 
       const landmarks = detection.landmarks;
@@ -373,17 +453,27 @@ export default function InterviewPage() {
       const offset = Math.abs(noseCenterX - eyeMidX) / faceWidth;
 
       if (offset > 0.12) {
+        setFaceDetected(false);
         consecutiveRef.current += 1;
+        if (faceAbsenceStartRef.current === null) {
+          faceAbsenceStartRef.current = Date.now();
+          integrityEventsRef.current.push({ timestamp: Date.now(), type: "gaze_away" });
+        }
         if (consecutiveRef.current >= 2) triggerDistraction();
       } else {
+        setFaceDetected(true);
         consecutiveRef.current = 0;
+        if (faceAbsenceStartRef.current !== null) {
+          totalFaceAbsenceMsRef.current += Date.now() - faceAbsenceStartRef.current;
+          faceAbsenceStartRef.current = null;
+          integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_returned" });
+        }
       }
     } catch {
       // skip frame silently
     }
   }, [triggerDistraction]);
 
-  // Keep a stable ref so setInterval always calls latest version
   const analyzeFrameRef = useRef(analyzeFrame);
   useEffect(() => { analyzeFrameRef.current = analyzeFrame; }, [analyzeFrame]);
 
@@ -404,6 +494,7 @@ export default function InterviewPage() {
   }
 
   async function doForcedLogout() {
+    saveIntegrityData();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (detectionRef.current) clearInterval(detectionRef.current);
     const supabase = createClient();
@@ -498,6 +589,7 @@ export default function InterviewPage() {
     }
     const isLast = currentIndex === questions.length - 1;
     if (isLast) {
+      saveIntegrityData();
       router.push(config?.includeChallenge && challenge ? "/challenge" : "/report");
     } else {
       setDirection(1);
@@ -505,7 +597,6 @@ export default function InterviewPage() {
     }
   }
 
-  // Keep saveAndNext ref current for timer auto-submit
   useEffect(() => { saveAndNextRef.current = saveAndNext; });
 
   function saveAndPrev() {
@@ -542,13 +633,13 @@ export default function InterviewPage() {
         onCancel={cancelLogout}
       />
 
-      {/* Webcam feed — required */}
-      <WebcamFeed videoRef={videoRef} />
+      {/* Webcam feed with face detection status */}
+      <WebcamFeed videoRef={videoRef} faceDetected={faceDetected} />
 
-      {/* Progress bar */}
-      <div className="h-0.5 bg-border">
+      {/* Gradient progress bar */}
+      <div className="h-1 bg-border">
         <div
-          className="h-0.5 bg-accent transition-all duration-500 ease-out"
+          className="h-1 progress-gradient transition-all duration-500 ease-out rounded-full"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -577,18 +668,29 @@ export default function InterviewPage() {
           </div>
         </div>
 
-        {/* Question card */}
+        {/* Question card with gradient top border */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={q.id}
-            className="card-md rounded-xl p-8 sm:p-10 mb-6"
+            className="rounded-xl p-8 sm:p-10 mb-6 relative overflow-hidden"
+            style={{
+              background: "linear-gradient(145deg, #ffffff, #f8f6f0)",
+              boxShadow: "var(--shadow-card-md)",
+              border: "1px solid var(--c-border)",
+            }}
             initial={{ opacity: 0, x: direction * 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -40 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
           >
+            {/* Gradient top accent bar */}
+            <div
+              className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+              style={{ background: "linear-gradient(90deg, #e8b923, #00b4d8)" }}
+            />
+
             {q.category && (
-              <span className="inline-flex items-center gap-1.5 font-mono text-2xs tracking-widest uppercase text-accent bg-accent-light border border-accent-mid px-2.5 py-1 rounded-full mb-5">
+              <span className="inline-flex items-center gap-1.5 font-mono text-2xs tracking-widest uppercase text-accent-hover bg-accent-light border border-accent-mid px-2.5 py-1 rounded-full mb-5">
                 {q.category === "Technical" ? (
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
@@ -667,7 +769,14 @@ export default function InterviewPage() {
                   )}
                   <span className="relative z-10 text-white">
                     {isListening ? (
-                      <span className="w-3.5 h-3.5 bg-white rounded-sm block" />
+                      <span className="flex items-end gap-0.5 h-5">
+                        <span className="wave-bar" />
+                        <span className="wave-bar" />
+                        <span className="wave-bar" />
+                        <span className="wave-bar" />
+                        <span className="wave-bar" />
+                        <span className="wave-bar" />
+                      </span>
                     ) : (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
@@ -722,7 +831,7 @@ export default function InterviewPage() {
 
         {!answerText.trim() && (
           <p className="text-center text-xs text-muted mt-5">
-            You can proceed without answering — Claude will note the skipped question.
+            You can proceed without answering — the AI will note the skipped question.
           </p>
         )}
       </main>
