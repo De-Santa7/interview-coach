@@ -175,7 +175,7 @@ function DistractionWarning({
       <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
         <div className="flex items-center gap-3 bg-warning text-charcoal px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm border border-warning/60">
           <span className="text-lg shrink-0">👀</span>
-          <span>Eyes on screen — distraction detected</span>
+          <span>No face detected — please look at the screen</span>
         </div>
       </div>
     );
@@ -184,18 +184,11 @@ function DistractionWarning({
   if (level === 2) {
     return (
       <div className="fixed top-14 left-0 right-0 z-50 animate-fade-in">
-        <div className="bg-danger text-white px-5 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">⚠️</span>
-            <span className="text-sm font-medium">
-              Second warning — you were caught looking away again. One more and you will be signed out.
-            </span>
-          </div>
-          <button onClick={onDismiss} className="shrink-0 opacity-80 hover:opacity-100 text-white">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+        <div className="bg-danger text-white px-5 py-3 flex items-center gap-3">
+          <span className="text-xl shrink-0">⚠️</span>
+          <span className="text-sm font-medium">
+            Second warning — face not detected again. One more and your session will be submitted.
+          </span>
         </div>
       </div>
     );
@@ -209,7 +202,7 @@ function DistractionWarning({
           Final Warning
         </h2>
         <p className="text-white/80 text-sm mb-6 leading-relaxed">
-          You have been repeatedly detected looking away from the screen. You will be automatically signed out.
+          Face not detected repeatedly. Your session will be submitted automatically.
         </p>
         <div className="text-5xl font-mono font-bold mb-6 tabular-nums">
           {countdown}
@@ -218,7 +211,7 @@ function DistractionWarning({
           onClick={onCancel}
           className="w-full bg-white text-danger font-semibold py-3 rounded-lg hover:bg-white/90 transition-colors text-sm"
         >
-          I&apos;m paying attention — cancel
+          I&apos;m here — cancel
         </button>
       </div>
     </div>
@@ -388,12 +381,13 @@ export default function InterviewPage() {
 
     if (count === 1) {
       setDistractionLevel(1);
-      setTimeout(() => setDistractionLevel((prev) => (prev === 1 ? 0 : prev)), 5000);
+      setTimeout(() => setDistractionLevel((prev) => (prev === 1 ? 0 : prev)), 4500);
     } else if (count === 2) {
       setDistractionLevel(2);
+      setTimeout(() => setDistractionLevel((prev) => (prev === 2 ? 0 : prev)), 4500);
     } else {
       setDistractionLevel(3);
-      startLogoutCountdown();
+      startFinalCountdown();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -436,12 +430,34 @@ export default function InterviewPage() {
       // Blocked if very dark OR uniformly covered (hand/object)
       const isBlocked = avg < 30 || variance < 400;
 
-      if (isBlocked) {
+      // Skin-tone face presence check in the center 50% of the frame
+      // Uses simplified Kovac skin detection: R > G, R > B, warm hue
+      let skinPixels = 0;
+      const x0 = Math.floor(W * 0.2), x1 = Math.floor(W * 0.8);
+      const y0 = Math.floor(H * 0.1), y1 = Math.floor(H * 0.9);
+      const centerTotal = (x1 - x0) * (y1 - y0);
+      for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) {
+          const i = (y * W + x) * 4;
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          if (r > 80 && g > 30 && b > 15 && r > g && r > b && (r - Math.min(g, b)) > 20) {
+            skinPixels++;
+          }
+        }
+      }
+      const skinRatio = skinPixels / centerTotal;
+      // No face: camera not blocked but skin tone < 4% of center region
+      const noFace = !isBlocked && skinRatio < 0.04;
+
+      const absent = isBlocked || noFace;
+
+      if (absent) {
         setFaceDetected(false);
         consecutiveRef.current += 1;
         if (faceAbsenceStartRef.current === null) {
           faceAbsenceStartRef.current = Date.now();
-          integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_left" });
+          const evtType = isBlocked ? "face_left" : "gaze_away";
+          integrityEventsRef.current.push({ timestamp: Date.now(), type: evtType });
         }
         if (consecutiveRef.current >= 2) triggerDistraction();
       } else {
@@ -461,8 +477,8 @@ export default function InterviewPage() {
   const analyzeFrameRef = useRef(analyzeFrame);
   useEffect(() => { analyzeFrameRef.current = analyzeFrame; }, [analyzeFrame]);
 
-  /* ── Forced logout ─────────────────────────────── */
-  function startLogoutCountdown() {
+  /* ── Final-warning countdown → redirect to report ── */
+  function startFinalCountdown() {
     if (logoutTimerRef.current) return;
     let n = 10;
     setLogoutCountdown(n);
@@ -472,27 +488,30 @@ export default function InterviewPage() {
       if (n <= 0) {
         clearInterval(logoutTimerRef.current!);
         logoutTimerRef.current = null;
-        doForcedLogout();
+        endSessionToReport();
       }
     }, 1000);
   }
 
-  async function doForcedLogout() {
+  function endSessionToReport() {
     saveIntegrityData();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (detectionRef.current) clearInterval(detectionRef.current);
-    const supabase = createClient();
-    await supabase?.auth.signOut();
-    router.push("/login?reason=distraction");
+    // Save current answer before leaving
+    if (questions[currentIndex]) {
+      const timeTaken = Math.round((Date.now() - startedAtRef.current) / 1000);
+      setAnswer({ questionId: questions[currentIndex].id, text: answerText, timeTaken });
+    }
+    router.push("/report");
   }
 
-  function cancelLogout() {
+  function cancelFinalCountdown() {
     if (logoutTimerRef.current) {
       clearInterval(logoutTimerRef.current);
       logoutTimerRef.current = null;
     }
     setLogoutCountdown(10);
-    setDistractionLevel(2);
+    setDistractionLevel(0);
   }
 
   /* ── Load saved answer when question changes ───── */
@@ -614,7 +633,7 @@ export default function InterviewPage() {
         level={distractionLevel}
         countdown={logoutCountdown}
         onDismiss={() => setDistractionLevel(0)}
-        onCancel={cancelLogout}
+        onCancel={cancelFinalCountdown}
       />
 
       {/* Webcam feed with face detection status */}
