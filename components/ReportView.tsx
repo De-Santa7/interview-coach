@@ -98,33 +98,33 @@ function IntegritySection({ data }: { data: IntegrityData }) {
         </span>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
           {/* Integrity score */}
-          <div className="text-center p-4 rounded-xl border border-border bg-bg">
+          <div className="text-center p-2.5 sm:p-4 rounded-xl border border-border bg-bg">
             <div
-              className="text-3xl font-light mb-1"
+              className="text-2xl sm:text-3xl font-light mb-1"
               style={{ fontFamily: "var(--font-fraunces)", color: data.score >= 85 ? "#06d6a0" : data.score >= 60 ? "#e8b923" : "#ef476f" }}
             >
               {data.score}%
             </div>
-            <p className="text-xs text-muted font-mono tracking-wide uppercase">Integrity Score</p>
+            <p className="text-[10px] sm:text-xs text-muted font-mono tracking-wide uppercase leading-tight">Integrity Score</p>
           </div>
 
           {/* Times left frame */}
-          <div className="text-center p-4 rounded-xl border border-border bg-bg">
-            <div className="text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
+          <div className="text-center p-2.5 sm:p-4 rounded-xl border border-border bg-bg">
+            <div className="text-2xl sm:text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
               {faceLeaveCount}
             </div>
-            <p className="text-xs text-muted font-mono tracking-wide uppercase">Times Looked Away</p>
+            <p className="text-[10px] sm:text-xs text-muted font-mono tracking-wide uppercase leading-tight">Looked Away</p>
           </div>
 
           {/* Time away */}
-          <div className="text-center p-4 rounded-xl border border-border bg-bg">
-            <div className="text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
+          <div className="text-center p-2.5 sm:p-4 rounded-xl border border-border bg-bg">
+            <div className="text-2xl sm:text-3xl font-light text-charcoal mb-1" style={{ fontFamily: "var(--font-fraunces)" }}>
               {faceAbsenceSecs}s
             </div>
-            <p className="text-xs text-muted font-mono tracking-wide uppercase">Total Time Away</p>
+            <p className="text-[10px] sm:text-xs text-muted font-mono tracking-wide uppercase leading-tight">Time Away</p>
           </div>
         </div>
 
@@ -166,19 +166,25 @@ function IntegritySection({ data }: { data: IntegrityData }) {
 interface ReportViewProps {
   config: SessionConfig;
   report: FullReport;
+  integrityDataProp?: IntegrityData | null;
 }
 
-export default function ReportView({ config, report: r }: ReportViewProps) {
+export default function ReportView({ config, report: r, integrityDataProp }: ReportViewProps) {
   const [activeTab, setActiveTab] = useState<"interview" | "challenge">("interview");
-  const [integrityData, setIntegrityData] = useState<IntegrityData | null>(null);
+  const [integrityData, setIntegrityData] = useState<IntegrityData | null>(integrityDataProp ?? null);
   const showConfetti = r.verdict === "Strong Hire" || r.verdict === "Hire";
 
   useEffect(() => {
+    // Try localStorage first (same-device session), fall back to prop (cross-device/history)
     try {
       const raw = localStorage.getItem(INTEGRITY_KEY);
-      if (raw) setIntegrityData(JSON.parse(raw) as IntegrityData);
+      if (raw) {
+        setIntegrityData(JSON.parse(raw) as IntegrityData);
+        return;
+      }
     } catch { /* ignore */ }
-  }, []);
+    if (integrityDataProp) setIntegrityData(integrityDataProp);
+  }, [integrityDataProp]);
 
   const revealUp = (delay = 0) => ({
     initial: { opacity: 0, y: 24 },

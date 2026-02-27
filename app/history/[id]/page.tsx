@@ -194,7 +194,7 @@ export default function HistoryDetailPage() {
           </div>
         </motion.div>
 
-        <ReportView config={entry.config} report={entry.report} />
+        <ReportView config={entry.config} report={entry.report} integrityDataProp={entry.integrityData} />
 
         {/* Action bar */}
         <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-border">

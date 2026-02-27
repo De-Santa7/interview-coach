@@ -46,6 +46,7 @@ function toRow(entry: HistoryEntry, userId: string) {
     answers: entry.answers,
     challenge: entry.challenge ?? null,
     challenge_submission: entry.challengeSubmission ?? "",
+    integrity_data: entry.integrityData ?? null,
   };
 }
 
@@ -59,6 +60,7 @@ function fromRow(row: Record<string, unknown>): HistoryEntry {
     answers: row.answers as HistoryEntry["answers"],
     challenge: (row.challenge as HistoryEntry["challenge"]) ?? null,
     challengeSubmission: (row.challenge_submission as string) ?? "",
+    integrityData: (row.integrity_data as HistoryEntry["integrityData"]) ?? null,
   };
 }
 

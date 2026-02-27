@@ -81,6 +81,7 @@ export interface HistoryEntry {
   answers: Answer[];
   challenge: Challenge | null;
   challengeSubmission: string;
+  integrityData?: IntegrityData | null;
 }
 
 /* ── Integrity tracking (webcam face detection) ── */

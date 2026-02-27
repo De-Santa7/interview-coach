@@ -10,6 +10,16 @@ import BackButton from "@/components/BackButton";
 import { useSession } from "@/lib/session-context";
 import { FullReport } from "@/lib/types";
 import { saveToHistory } from "@/lib/history";
+import { IntegrityData } from "@/lib/types";
+
+const INTEGRITY_KEY = "interview-coach-integrity";
+
+function readIntegrityData(): IntegrityData | null {
+  try {
+    const raw = localStorage.getItem(INTEGRITY_KEY);
+    return raw ? (JSON.parse(raw) as IntegrityData) : null;
+  } catch { return null; }
+}
 import ReportView from "@/components/ReportView";
 import { updateUserStats } from "@/lib/user-stats";
 
@@ -80,6 +90,7 @@ export default function ReportPage() {
           answers,
           challenge: challenge ?? null,
           challengeSubmission,
+          integrityData: readIntegrityData(),
         });
         // Update Supabase user stats + fire GA event
         updateUserStats(p.overallScore, questions.length).catch(() => {});

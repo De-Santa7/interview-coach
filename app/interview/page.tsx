@@ -227,9 +227,9 @@ function WebcamFeed({
   faceDetected: boolean;
 }) {
   return (
-    <div className="fixed top-16 right-3 z-40 hidden sm:block">
+    <div className="fixed top-16 right-3 z-40">
       <div
-        className={`relative w-44 h-[110px] rounded-xl overflow-hidden border-2 shadow-card-md bg-black transition-all duration-500 ${
+        className={`relative w-24 h-[60px] sm:w-44 sm:h-[110px] rounded-lg sm:rounded-xl overflow-hidden border-2 shadow-card-md bg-black transition-all duration-500 ${
           faceDetected ? "webcam-ok" : "webcam-warn"
         }`}
       >
@@ -239,17 +239,17 @@ function WebcamFeed({
           autoPlay playsInline muted
           className="w-full h-full object-cover"
         />
-        <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+        <div className="absolute top-1 left-1 sm:top-2 sm:left-2 flex items-center gap-1 bg-black/60 rounded px-1 sm:px-1.5 py-0.5">
           <span className={`w-1.5 h-1.5 rounded-full ${faceDetected ? "bg-success" : "bg-danger animate-pulse"}`} />
-          <span className="font-mono text-[9px] text-white tracking-wider">
+          <span className="font-mono text-[8px] sm:text-[9px] text-white tracking-wider">
             {faceDetected ? "LIVE" : "NO FACE"}
           </span>
         </div>
       </div>
-      <p className={`text-center font-mono text-[9px] mt-1.5 tracking-wide transition-colors ${
+      <p className={`text-center font-mono text-[8px] sm:text-[9px] mt-1 sm:mt-1.5 tracking-wide transition-colors ${
         faceDetected ? "text-success" : "text-danger"
       }`}>
-        {faceDetected ? "👁 Monitoring active" : "⚠️ Look at screen"}
+        {faceDetected ? "👁 Active" : "⚠️ Look at screen"}
       </p>
     </div>
   );
