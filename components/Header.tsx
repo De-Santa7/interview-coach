@@ -5,13 +5,28 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import LogoIcon from "@/components/LogoIcon";
-import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/history", label: "History" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/setup", label: "New Session" },
+  { href: "/", label: "Home", icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  )},
+  { href: "/history", label: "History", icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  )},
+  { href: "/analytics", label: "Analytics", icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  )},
+  { href: "/setup", label: "New Session", icon: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+  )},
 ];
 
 interface HeaderProps {
@@ -76,8 +91,7 @@ export default function Header({ dark = false }: HeaderProps): React.ReactElemen
             Start Interview
           </Link>
 
-          <ThemeToggle dark={dark} />
-          <UserMenu dark={dark} />
+          <UserMenu dark={dark} pathname={pathname} />
         </nav>
       </div>
     </header>
@@ -93,7 +107,7 @@ function getInitials(name: string | undefined, email: string): string {
   return (email[0] ?? "?").toUpperCase();
 }
 
-function UserMenu({ dark }: { dark: boolean }): React.ReactElement {
+function UserMenu({ dark, pathname }: { dark: boolean; pathname: string }): React.ReactElement {
   const router = useRouter();
   const clientRef = useRef<ReturnType<typeof createClient> | null>(null);
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -180,22 +194,51 @@ function UserMenu({ dark }: { dark: boolean }): React.ReactElement {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-52 card-md py-1 z-50 animate-fade-in">
+        <div className="absolute right-0 top-10 w-60 card-md py-1 z-50 animate-fade-in">
+          {/* User info */}
           <div className="px-3 py-2.5 border-b border-border">
             {name && <p className="text-sm font-medium text-charcoal truncate">{name}</p>}
             <p className="text-xs text-muted truncate">{email}</p>
           </div>
-          <Link
-            href="/analytics"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-body hover:text-charcoal hover:bg-bg transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-            Analytics
-          </Link>
+
+          {/* Mobile-only: full nav links */}
+          <div className="sm:hidden border-b border-border py-1">
+            {NAV_LINKS.map(({ href, label, icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                    active
+                      ? "text-accent font-semibold bg-accent-light"
+                      : "text-body hover:text-charcoal hover:bg-bg"
+                  }`}
+                >
+                  {icon}
+                  {label}
+                  {active && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-accent" />
+                  )}
+                </Link>
+              );
+            })}
+            <div className="px-3 pt-1 pb-2">
+              <Link
+                href="/setup"
+                onClick={() => setOpen(false)}
+                className="btn-primary !text-xs !py-2 w-full flex items-center justify-center gap-1.5"
+              >
+                Start Interview
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </Link>
+            </div>
+          </div>
+
+          {/* Account links — always visible */}
           <Link
             href="/settings"
             onClick={() => setOpen(false)}

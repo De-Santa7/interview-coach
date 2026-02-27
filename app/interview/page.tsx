@@ -35,8 +35,6 @@ declare global {
 /* ── Types ─────────────────────────────────────── */
 type CameraState = "idle" | "requesting" | "granted" | "denied";
 type DistractionLevel = 0 | 1 | 2 | 3; // 0=clean 1=warn 2=final-warn 3=critical
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type FaceApiModule = any;
 
 const INTEGRITY_KEY = "interview-coach-integrity";
 
@@ -276,8 +274,8 @@ export default function InterviewPage() {
   const [logoutCountdown, setLogoutCountdown] = useState(10);
   const [faceDetected, setFaceDetected] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const analysisCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const faceapiRef = useRef<FaceApiModule>(null);
   const detectionRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logoutTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const distractionCountRef = useRef(0);
@@ -324,7 +322,6 @@ export default function InterviewPage() {
       .then((stream) => {
         streamRef.current = stream;
         setCameraState("granted");
-        loadFaceDetection();
       })
       .catch(() => setCameraState("denied"));
   }
@@ -347,6 +344,11 @@ export default function InterviewPage() {
       video.srcObject = stream;
       video.play().catch(() => {});
     }
+    // Start canvas-based detection immediately — no CDN needed
+    detectionRef.current = setInterval(() => analyzeFrameRef.current(), 1000);
+    return () => {
+      if (detectionRef.current) clearInterval(detectionRef.current);
+    };
   }, [cameraState]);
 
   /* ── Integrity data persistence ─────────────────── */
@@ -377,22 +379,6 @@ export default function InterviewPage() {
     } catch { /* ignore */ }
   }
 
-  /* ── Face detection model loading ─────────────── */
-  async function loadFaceDetection() {
-    try {
-      const faceapi = await import("face-api.js");
-      const MODEL_URL = "https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights";
-      await Promise.all([
-        faceapi.loadTinyFaceDetectorModel(MODEL_URL),
-        faceapi.loadFaceLandmarkTinyModel(MODEL_URL),
-      ]);
-      faceapiRef.current = faceapi;
-      detectionRef.current = setInterval(() => analyzeFrameRef.current(), 1500);
-    } catch (e) {
-      console.warn("Face detection unavailable — proctoring limited to camera feed:", e);
-    }
-  }
-
   /* ── Distraction logic ─────────────────────────── */
   const triggerDistraction = useCallback(() => {
     consecutiveRef.current = 0;
@@ -411,53 +397,51 @@ export default function InterviewPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const analyzeFrame = useCallback(async () => {
-    const faceapi = faceapiRef.current;
+  /* ── Canvas pixel analysis — no CDN, works instantly ── */
+  const analyzeFrame = useCallback(() => {
     const video = videoRef.current;
-    if (!faceapi || !video || video.readyState < 2 || video.paused) return;
+    if (!video || video.readyState < 2 || video.paused) return;
+
+    // Lazily create the offscreen canvas
+    if (!analysisCanvasRef.current) {
+      analysisCanvasRef.current = document.createElement("canvas");
+    }
+    const canvas = analysisCanvasRef.current;
+    const W = 64, H = 48;
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
 
     try {
-      const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
-        .withFaceLandmarks(true);
+      ctx.drawImage(video, 0, 0, W, H);
+      const { data } = ctx.getImageData(0, 0, W, H);
+      const n = W * H;
 
-      if (!detection) {
+      // Compute average luminance
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      }
+      const avg = sum / n;
+
+      // Compute variance (low variance = uniform coverage e.g. fingers/palm)
+      let variance = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        variance += (lum - avg) * (lum - avg);
+      }
+      variance /= n;
+
+      // Blocked if very dark OR uniformly covered (hand/object)
+      const isBlocked = avg < 30 || variance < 400;
+
+      if (isBlocked) {
         setFaceDetected(false);
         consecutiveRef.current += 1;
-        // Start tracking absence time
         if (faceAbsenceStartRef.current === null) {
           faceAbsenceStartRef.current = Date.now();
           integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_left" });
-        }
-        if (consecutiveRef.current >= 2) triggerDistraction();
-        return;
-      }
-
-      // Face found — end any absence window
-      if (faceAbsenceStartRef.current !== null) {
-        totalFaceAbsenceMsRef.current += Date.now() - faceAbsenceStartRef.current;
-        faceAbsenceStartRef.current = null;
-        integrityEventsRef.current.push({ timestamp: Date.now(), type: "face_returned" });
-      }
-
-      const landmarks = detection.landmarks;
-      const leftEye: { x: number }[] = landmarks.getLeftEye();
-      const rightEye: { x: number }[] = landmarks.getRightEye();
-      const nose: { x: number }[] = landmarks.getNose();
-
-      const leftEyeX = leftEye.reduce((s, p) => s + p.x, 0) / leftEye.length;
-      const rightEyeX = rightEye.reduce((s, p) => s + p.x, 0) / rightEye.length;
-      const eyeMidX = (leftEyeX + rightEyeX) / 2;
-      const noseCenterX = nose.reduce((s, p) => s + p.x, 0) / nose.length;
-      const faceWidth = detection.detection.box.width;
-      const offset = Math.abs(noseCenterX - eyeMidX) / faceWidth;
-
-      if (offset > 0.12) {
-        setFaceDetected(false);
-        consecutiveRef.current += 1;
-        if (faceAbsenceStartRef.current === null) {
-          faceAbsenceStartRef.current = Date.now();
-          integrityEventsRef.current.push({ timestamp: Date.now(), type: "gaze_away" });
         }
         if (consecutiveRef.current >= 2) triggerDistraction();
       } else {

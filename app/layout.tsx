@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "@/lib/session-context";
-import ThemeProvider from "@/components/ThemeProvider";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -29,9 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <ThemeProvider>
-          <SessionProvider>{children}</SessionProvider>
-        </ThemeProvider>
+        <SessionProvider>{children}</SessionProvider>
       </body>
       {process.env.NEXT_PUBLIC_GA_ID && (
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
