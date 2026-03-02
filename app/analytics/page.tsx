@@ -117,7 +117,7 @@ function Stat({
       }}
     >
       <div
-        className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-10"
+        className="absolute top-0 right-0 w-20 h-20 rounded-bl-full opacity-50"
         style={{ background: gradient }}
       />
       <p className="text-3xl mb-1" style={{ lineHeight: 1 }}>{icon}</p>

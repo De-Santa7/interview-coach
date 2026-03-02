@@ -162,32 +162,32 @@ export default function HistoryDetailPage() {
               background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
             }}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-start gap-4 min-w-0">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                 style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}
               >
                 {levelIcon}
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="font-mono text-[10px] text-white/40 tracking-widest uppercase mb-0.5">Session Report</p>
                 <h1
-                  className="text-lg font-light text-white"
+                  className="text-lg font-light text-white leading-snug"
                   style={{ fontFamily: "var(--font-fraunces)" }}
                 >
                   {entry.config.level} {entry.config.profession}
                 </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="font-mono text-xs text-white/50 border border-white/20 px-2 py-0.5 rounded-full">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                  <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
                     {entry.config.interviewType}
                   </span>
-                  <span className="font-mono text-xs text-white/50 border border-white/20 px-2 py-0.5 rounded-full">
+                  <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
                     {entry.config.questionCount}Q
                   </span>
                 </div>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right shrink-0">
               <p className="font-mono text-xs text-white/40 mb-1">Completed</p>
               <p className="font-mono text-sm text-white/70">{formatDate(entry.timestamp)}</p>
             </div>

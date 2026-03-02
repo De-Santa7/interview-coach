@@ -474,7 +474,7 @@ export default function Home() {
               )}
               <div className="flex items-start justify-between mb-6">
                 <span
-                  className="text-5xl font-light opacity-15 group-hover:opacity-30 transition-opacity"
+                  className="text-5xl font-bold opacity-70 group-hover:opacity-100 transition-opacity"
                   style={{ fontFamily: "var(--font-fraunces)", color }}
                 >
                   {n}

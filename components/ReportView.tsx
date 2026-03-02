@@ -227,12 +227,22 @@ export default function ReportView({ config, report: r, integrityDataProp }: Rep
           >
             {r.verdict}
           </h1>
-          <p className="font-mono text-xs text-white/70">
-            {config.level} {config.profession}&ensp;&middot;&ensp;
-            {config.questionCount} questions&ensp;&middot;&ensp;
-            {config.interviewType}
-            {config.includeChallenge && <>&ensp;&middot;&ensp;practical challenge</>}
-          </p>
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1">
+            <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+              {config.level} {config.profession}
+            </span>
+            <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+              {config.questionCount} questions
+            </span>
+            <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+              {config.interviewType}
+            </span>
+            {config.includeChallenge && (
+              <span className="font-mono text-xs text-white/70 border border-white/25 bg-white/10 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                + challenge
+              </span>
+            )}
+          </div>
           {showConfetti && (
             <p className="text-white/80 text-sm mt-4 font-medium">🎉 Congratulations!</p>
           )}
